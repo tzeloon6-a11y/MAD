@@ -4,14 +4,12 @@ plugins {
 
 android {
     namespace = "com.example.mad"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.mad"
-        minSdk = 21
-        targetSdk = 36
+        minSdk = 24
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -41,5 +39,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-
+    
+    // Gson
+    implementation("com.google.code.gson:gson:2.10.1")
+    // Volley - Added for Database Connection
+    implementation("com.android.volley:volley:1.2.1")
 }

@@ -1,52 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/classic_background"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="24dp"
+        android:gravity="center_horizontal">
 
         <TextView
             android:id="@+id/tv_login_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:text="Login"
-            android:textSize="28sp"
+            android:layout_marginTop="48dp"
+            android:layout_marginBottom="32dp"
+            android:text="Student Job Portal"
+            android:textColor="@color/app_blue"
+            android:textSize="32sp"
             android:textStyle="bold" />
 
         <EditText
             android:id="@+id/et_email"
-            android:layout_width="364dp"
+            android:layout_width="match_parent"
             android:layout_height="58dp"
             android:layout_marginBottom="16dp"
+            android:background="@android:drawable/edit_text"
             android:hint="Email"
-            android:inputType="textEmailAddress" />
+            android:inputType="textEmailAddress"
+            android:textColor="@color/classic_text_primary"
+            android:textColorHint="@color/classic_text_secondary" />
 
         <EditText
             android:id="@+id/et_password"
-            android:layout_width="364dp"
+            android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="32dp"
+            android:background="@android:drawable/edit_text"
             android:hint="Password"
-            android:inputType="textPassword" />
+            android:inputType="textPassword"
+            android:textColor="@color/classic_text_primary"
+            android:textColorHint="@color/classic_text_secondary" />
 
         <Button
             android:id="@+id/btn_login"
-            android:layout_width="364dp"
-            android:layout_height="wrap_content"
-            android:text="Login" />
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Login"
+            android:backgroundTint="@color/app_blue"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_go_register"
             android:layout_width="wrap_content"
-            android:layout_height="29dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="Don't have an account? Sign up"
-            android:textSize="14sp" />
+            android:textColor="@color/app_blue"
+            android:textSize="16sp" />
 
     </LinearLayout>
 

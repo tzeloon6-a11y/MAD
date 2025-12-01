@@ -2,4 +2,17 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- New Theme Colors - Classic Blue & Yellow -->
+    <color name="app_blue">#1A237E</color> <!-- Deep Navy Blue -->
+    <color name="app_yellow">#FFD700</color> <!-- Classic Gold -->
+    <color name="app_blue_dark">#000051</color>
+    <color name="app_yellow_dark">#C7A500</color>
+    
+    <color name="classic_background">#F5F5F5</color>
+    <color name="classic_text_primary">#212121</color>
+    <color name="classic_text_secondary">#757575</color>
+    
+    <!-- Pale Yellow with ~50% Opacity (Alpha 80) -->
+    <color name="pale_yellow">#80FFFDE7</color>
 </resources>

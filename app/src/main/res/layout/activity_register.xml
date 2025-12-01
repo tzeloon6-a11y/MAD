@@ -1,80 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/classic_background"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="24dp"
+        android:gravity="center_horizontal">
 
         <TextView
             android:id="@+id/tv_register_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sign Up"
-            android:textSize="28sp"
+            android:text="Create Account"
+            android:textColor="@color/app_blue"
+            android:textSize="32sp"
             android:textStyle="bold"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="32dp" />
 
         <EditText
             android:id="@+id/et_name"
-            android:layout_width="360dp"
-            android:layout_height="63dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
             android:layout_marginBottom="16dp"
-            android:hint="Name" />
+            android:background="@android:drawable/edit_text"
+            android:hint="Full Name"
+            android:textColor="@color/classic_text_primary"
+            android:textColorHint="@color/classic_text_secondary" />
 
         <EditText
             android:id="@+id/et_reg_email"
-            android:layout_width="362dp"
-            android:layout_height="74dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
             android:layout_marginBottom="16dp"
-            android:hint="Email"
-            android:inputType="textEmailAddress" />
+            android:background="@android:drawable/edit_text"
+            android:hint="Email Address"
+            android:inputType="textEmailAddress"
+            android:textColor="@color/classic_text_primary"
+            android:textColorHint="@color/classic_text_secondary" />
 
         <EditText
             android:id="@+id/et_reg_password"
-            android:layout_width="362dp"
-            android:layout_height="67dp"
-            android:layout_marginBottom="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginBottom="24dp"
+            android:background="@android:drawable/edit_text"
             android:hint="Password"
-            android:inputType="textPassword" />
+            android:inputType="textPassword"
+            android:textColor="@color/classic_text_primary"
+            android:textColorHint="@color/classic_text_secondary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="I am a:"
+            android:textColor="@color/classic_text_secondary"
+            android:layout_marginBottom="8dp"/>
 
         <RadioGroup
             android:id="@+id/rg_role"
-            android:layout_width="360dp"
-            android:layout_height="60dp"
-            android:layout_marginBottom="24dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
             android:orientation="horizontal">
 
             <RadioButton
                 android:id="@+id/rb_student"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Student" />
+                android:text="Student"
+                android:textColor="@color/classic_text_primary"
+                android:buttonTint="@color/app_blue"/>
 
             <RadioButton
                 android:id="@+id/rb_recruiter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
-                android:text="Recruiter" />
+                android:layout_marginStart="32dp"
+                android:text="Recruiter"
+                android:textColor="@color/classic_text_primary"
+                android:buttonTint="@color/app_blue"/>
 
         </RadioGroup>
 
         <Button
             android:id="@+id/btn_register"
-            android:layout_width="362dp"
-            android:layout_height="58dp"
-            android:text="Register" />
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Register"
+            android:backgroundTint="@color/app_blue"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_go_login"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Already have an account? Login"
-            android:textSize="14sp"
+            android:textColor="@color/app_blue"
+            android:textSize="16sp"
             android:layout_marginTop="24dp" />
 
     </LinearLayout>

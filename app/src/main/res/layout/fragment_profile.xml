@@ -1,30 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ll_profile_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center">
+    android:background="@color/classic_background"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:paddingTop="24dp">
 
+    <!-- Existing profile fields -->
     <TextView
-        android:id="@+id/tv_profile"
+        android:id="@+id/tv_profile_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:text="Profile Fragment"
-        android:textSize="24sp" />
+        android:text="Name"
+        android:textColor="@color/app_blue"
+        android:textSize="24sp"
+        android:textStyle="bold"/>
 
+    <TextView
+        android:id="@+id/tv_profile_role"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Role"
+        android:textColor="@color/classic_text_secondary"
+        android:textSize="16sp"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Resume status (student) -->
+    <TextView
+        android:id="@+id/tv_resume_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Resume: Not uploaded"
+        android:textColor="@color/classic_text_primary"
+        android:layout_marginBottom="24dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/app_yellow"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:id="@+id/tv_profile_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="My Experience Posts"
+        android:textColor="@color/app_blue"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:paddingBottom="12dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_experience_posts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+        
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_logout"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/tv_profile"
-        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
         android:text="Logout"
-        android:textColor="#FF0000"
+        android:textColor="#D32F2F"
         app:icon="@drawable/ic_logout_red_24dp"
-        app:iconTint="#FF0000"
-        app:strokeColor="#FF0000" />
+        app:iconTint="#D32F2F"
+        app:strokeColor="#D32F2F" />
 
-</RelativeLayout>
+</LinearLayout>

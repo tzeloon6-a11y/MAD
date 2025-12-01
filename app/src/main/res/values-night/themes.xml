@@ -2,6 +2,17 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.MAD" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/app_blue_dark</item>
+        <item name="colorPrimaryVariant">@color/app_blue</item>
+        <item name="colorOnPrimary">@color/white</item>
+        
+        <item name="colorSecondary">@color/app_yellow</item>
+        <item name="colorSecondaryVariant">@color/app_yellow_dark</item>
+        <item name="colorOnSecondary">@color/black</item>
+        
+        <!-- Status Bar Color -->
+        <item name="android:statusBarColor">@android:color/black</item>
+        <!-- Status Bar Icon Color (false for light icons on dark background) -->
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

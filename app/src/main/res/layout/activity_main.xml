@@ -2,12 +2,23 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/classic_background"
+    android:fitsSystemWindows="true">
+
+    <!-- 5dp Black Padding at the top -->
+    <View
+        android:id="@+id/top_padding_bar"
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:background="@android:color/black"
+        android:layout_alignParentTop="true" />
 
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/top_padding_bar"
         android:layout_above="@+id/bottom_navigation"/>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -15,7 +26,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="?android:attr/windowBackground"
+        android:background="@color/app_blue"
+        android:theme="@style/ThemeOverlay.MAD.BottomNavigation"
+        app:itemIconTint="@color/nav_item_colors"
+        app:itemTextColor="@color/nav_item_colors"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu" />
 
