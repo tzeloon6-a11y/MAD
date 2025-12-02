@@ -17,8 +17,10 @@ public class ApiClient {
         return requestQueue;
     }
 
-    // Base URL for your local PHP backend
-    // For Emulator: 10.0.2.2 replaces localhost
+    // Base URL for your backend
+    // IF USING EMULATOR: Use "http://10.0.2.2/mad/" (assuming XAMPP/WAMP is running)
+    // IF USING REAL PHONE: Use your PC's IP, e.g., "http://192.168.1.5/mad/"
+    // Free hosting (InfinityFree) often blocks mobile apps, so Localhost is better for testing.
     public static final String BASE_URL = "http://10.0.2.2/mad/";
-}
 
+}

@@ -37,6 +37,7 @@ public class LoginActivity extends AppCompatActivity {
     public static final String KEY_EMAIL = "email";
     public static final String KEY_NAME = "name";
     public static final String KEY_ROLE = "role"; // "student" or "recruiter"
+    public static final String KEY_PASSWORD = "password";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,11 +97,13 @@ public class LoginActivity extends AppCompatActivity {
 
         String url = ApiClient.BASE_URL + "login.php";
 
+        // Using StringRequest (POST Form Data) instead of JsonObjectRequest
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 url,
                 response -> {
                     try {
+                        // Parse the JSON response from server
                         JSONObject json = new JSONObject(response);
                         boolean success = json.optBoolean("success", false);
                         String message = json.optString("message", "No message");
@@ -130,12 +133,13 @@ public class LoginActivity extends AppCompatActivity {
 
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        Toast.makeText(LoginActivity.this, "Response parse error", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Response parse error: " + response, Toast.LENGTH_LONG).show();
                     }
                 },
                 error -> {
                     error.printStackTrace();
-                    Toast.makeText(LoginActivity.this, "Network error", Toast.LENGTH_SHORT).show();
+                    android.util.Log.e("LoginError", "Volley error: " + error.getMessage());
+                    Toast.makeText(LoginActivity.this, "Network error. Check connection.", Toast.LENGTH_SHORT).show();
                 }
         ) {
             @Override
