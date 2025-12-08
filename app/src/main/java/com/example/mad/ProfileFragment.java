@@ -4,27 +4,27 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.google.android.material.button.MaterialButton;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ProfileFragment extends Fragment {
 
@@ -38,6 +38,7 @@ public class ProfileFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
         tvName = view.findViewById(R.id.tv_profile_name);
@@ -46,9 +47,9 @@ public class ProfileFragment extends Fragment {
         rvExperience = view.findViewById(R.id.rv_experience_posts);
         btnLogout = view.findViewById(R.id.btn_logout);
 
-        // Load user info
         SharedPreferences prefs = requireActivity().getSharedPreferences(
                 LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
+
         String email = prefs.getString(LoginActivity.KEY_EMAIL, "No Email");
         String role = prefs.getString(LoginActivity.KEY_ROLE, "student");
 
@@ -63,70 +64,71 @@ public class ProfileFragment extends Fragment {
             tvResumeStatus.setVisibility(View.GONE);
         }
 
-        // Setup RecyclerView
+        // ✅ RecyclerView setup
         rvExperience.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new ExperiencePostAdapter(new ArrayList<>());
         rvExperience.setAdapter(adapter);
 
-        // Load posts from server
-        loadExperiencePostsFromServer();
+        // ✅ Load Experience from Supabase
+        loadExperiencePostsFromSupabase();
 
-        // Logout logic
-        if (btnLogout != null) {
-            btnLogout.setOnClickListener(v -> {
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.clear();
-                editor.apply();
+        // ✅ Logout
+        btnLogout.setOnClickListener(v -> {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.clear();
+            editor.apply();
 
-                Intent intent = new Intent(getActivity(), LoginActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-                getActivity().finish();
-            });
-        }
+            Intent intent = new Intent(getActivity(), LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            requireActivity().finish();
+        });
 
         return view;
     }
 
-    private void loadExperiencePostsFromServer() {
+    // ✅ ✅ ✅ LOAD EXPERIENCE POSTS FROM SUPABASE
+    private void loadExperiencePostsFromSupabase() {
+
         SharedPreferences prefs = requireActivity().getSharedPreferences(
                 LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
 
-        int userId = prefs.getInt(LoginActivity.KEY_USER_ID, -1);
+        String userId = prefs.getString(LoginActivity.KEY_USER_ID, null);
 
-        if (userId == -1) {
+        if (userId == null) {
             Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String url = ApiClient.BASE_URL + "get_experience_posts.php?user_id=" + userId;
+        // Query 'experience_posts' table
+        String url = SupabaseConfig.SUPABASE_URL +
+                "/rest/v1/experience_posts?user_id=eq." + userId + "&select=*";
 
-        JsonObjectRequest request = new JsonObjectRequest(
+        JsonArrayRequest request = new JsonArrayRequest(
                 Request.Method.GET,
                 url,
                 null,
                 response -> {
                     try {
-                        boolean success = response.optBoolean("success", false);
-                        if (!success) {
-                            String msg = response.optString("message", "Failed to load posts");
-                            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        JSONArray data = response.getJSONArray("data");
                         ArrayList<ExperiencePostItem> list = new ArrayList<>();
 
-                        for (int i = 0; i < data.length(); i++) {
-                            JSONObject obj = data.getJSONObject(i);
-                            int id = obj.getInt("id");
-                            int uid = obj.getInt("user_id");
+                        for (int i = 0; i < response.length(); i++) {
+                            JSONObject obj = response.getJSONObject(i);
+
+                            String id = obj.getString("id"); // ✅ CHANGED TO STRING (UUID)
+                            String uid = obj.getString("user_id");
                             String title = obj.getString("title");
-                            String desc = obj.getString("description");
+                            
+                            // Read 'description' as per schema update in PostFragment
+                            String desc = obj.optString("description", obj.optString("content", ""));
+                            
                             String mediaUrl = obj.isNull("media_url") ? "" : obj.getString("media_url");
+                            String mediaType = obj.isNull("media_type") ? "" : obj.getString("media_type");
                             String createdAt = obj.getString("created_at");
 
-                            list.add(new ExperiencePostItem(id, uid, title, desc, mediaUrl, createdAt));
+                            list.add(new ExperiencePostItem(
+                                    id, uid, title, desc, mediaUrl, mediaType, createdAt
+                            ));
                         }
 
                         adapter.updateData(list);
@@ -138,9 +140,17 @@ public class ProfileFragment extends Fragment {
                 },
                 error -> {
                     error.printStackTrace();
-                    Toast.makeText(getContext(), "Network error", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Failed to load experience posts", Toast.LENGTH_SHORT).show();
                 }
-        );
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                return headers;
+            }
+        };
 
         ApiClient.getRequestQueue(requireContext()).add(request);
     }

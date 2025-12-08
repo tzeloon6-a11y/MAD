@@ -19,9 +19,9 @@ import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,15 +36,16 @@ public class LoginActivity extends AppCompatActivity {
     public static final String KEY_USER_ID = "user_id";
     public static final String KEY_EMAIL = "email";
     public static final String KEY_NAME = "name";
-    public static final String KEY_ROLE = "role"; // "student" or "recruiter"
-    public static final String KEY_PASSWORD = "password";
+    public static final String KEY_ROLE = "role";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         setContentView(R.layout.activity_login);
 
-        // Force status bar to be black with light (white) icons
+        // Status bar
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
@@ -53,7 +54,6 @@ public class LoginActivity extends AppCompatActivity {
         WindowInsetsControllerCompat windowInsetsController =
                 WindowCompat.getInsetsController(window, window.getDecorView());
         if (windowInsetsController != null) {
-            // false = dark background, light icons
             windowInsetsController.setAppearanceLightStatusBars(false);
         }
 
@@ -62,26 +62,23 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btn_login);
         tvGoRegister = findViewById(R.id.tv_go_register);
 
-        // If already logged in, skip login page
         checkIfAlreadyLoggedIn();
 
-        // Login button
         btnLogin.setOnClickListener(v -> attemptLogin());
 
-        // Go to Register screen
         tvGoRegister.setOnClickListener(v -> {
-            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
         });
     }
 
     private void checkIfAlreadyLoggedIn() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        int savedUserId = prefs.getInt(KEY_USER_ID, -1);
+        // ✅ CHANGED: Read as String
+        String savedUserId = prefs.getString(KEY_USER_ID, null);
         String savedEmail = prefs.getString(KEY_EMAIL, null);
         String savedRole = prefs.getString(KEY_ROLE, null);
 
-        if (savedUserId != -1 && savedEmail != null && savedRole != null) {
+        if (savedUserId != null && savedEmail != null && savedRole != null) {
             goToMainActivity();
         }
     }
@@ -91,67 +88,74 @@ public class LoginActivity extends AppCompatActivity {
         String password = etPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
-            Toast.makeText(this, "Please fill in both email and password", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Fill in all fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String url = ApiClient.BASE_URL + "login.php";
+        try {
+            // Encode params
+            String url = ApiClient.BASE_URL +
+                    "users?email=eq." + URLEncoder.encode(email, "UTF-8") +
+                    "&password=eq." + URLEncoder.encode(password, "UTF-8") +
+                    "&select=*";
 
-        // Using StringRequest (POST Form Data) instead of JsonObjectRequest
-        StringRequest request = new StringRequest(
-                Request.Method.POST,
-                url,
-                response -> {
-                    try {
-                        // Parse the JSON response from server
-                        JSONObject json = new JSONObject(response);
-                        boolean success = json.optBoolean("success", false);
-                        String message = json.optString("message", "No message");
+            StringRequest request = new StringRequest(
+                    Request.Method.GET,
+                    url,
+                    response -> {
+                        try {
+                            if (response.equals("[]")) {
+                                Toast.makeText(this, "Invalid login", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
 
-                        if (!success) {
-                            Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
-                            return;
+                            // Remove brackets if array
+                            String jsonStr = response;
+                            if (jsonStr.startsWith("[") && jsonStr.endsWith("]")) {
+                                jsonStr = jsonStr.substring(1, jsonStr.length() - 1);
+                            }
+                            JSONObject user = new JSONObject(jsonStr);
+
+                            String userId = user.getString("id"); // ✅ UUID STRING
+                            String name = user.getString("name");
+                            String role = user.getString("role");
+
+                            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putString(KEY_USER_ID, userId); // ✅ STRING NOW
+                            editor.putString(KEY_NAME, name);
+                            editor.putString(KEY_EMAIL, email);
+                            editor.putString(KEY_ROLE, role);
+                            editor.apply();
+
+                            Toast.makeText(this, "Login success", Toast.LENGTH_SHORT).show();
+                            goToMainActivity();
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Toast.makeText(this, "Parsing error", Toast.LENGTH_SHORT).show();
                         }
-
-                        JSONObject userObj = json.getJSONObject("user");
-                        int userId = userObj.getInt("id");
-                        String name = userObj.optString("name", "");
-                        String userEmail = userObj.getString("email");
-                        String role = userObj.getString("role");
-
-                        // Save to SharedPreferences
-                        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                        SharedPreferences.Editor editor = prefs.edit();
-                        editor.putInt(KEY_USER_ID, userId);
-                        editor.putString(KEY_NAME, name);
-                        editor.putString(KEY_EMAIL, userEmail);
-                        editor.putString(KEY_ROLE, role);
-                        editor.apply();
-
-                        Toast.makeText(LoginActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
-                        goToMainActivity();
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Toast.makeText(LoginActivity.this, "Response parse error: " + response, Toast.LENGTH_LONG).show();
+                    },
+                    error -> {
+                        error.printStackTrace();
+                        Toast.makeText(this, "Network error", Toast.LENGTH_SHORT).show();
                     }
-                },
-                error -> {
-                    error.printStackTrace();
-                    android.util.Log.e("LoginError", "Volley error: " + error.getMessage());
-                    Toast.makeText(LoginActivity.this, "Network error. Check connection.", Toast.LENGTH_SHORT).show();
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                    return headers;
                 }
-        ) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("email", email);
-                params.put("password", password);
-                return params;
-            }
-        };
+            };
 
-        ApiClient.getRequestQueue(this).add(request);
+            ApiClient.getRequestQueue(this).add(request);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void goToMainActivity() {

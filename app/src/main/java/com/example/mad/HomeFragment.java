@@ -1,7 +1,5 @@
 package com.example.mad;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,26 +12,26 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.JsonArrayRequest;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class HomeFragment extends Fragment {
 
     private RecyclerView rvJobPosts;
     private JobPostAdapter adapter;
 
-    public HomeFragment() {
-        // Required empty public constructor
-    }
+    public HomeFragment() {}
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         rvJobPosts = view.findViewById(R.id.rv_job_posts);
@@ -42,7 +40,7 @@ public class HomeFragment extends Fragment {
         adapter = new JobPostAdapter(new ArrayList<>());
         rvJobPosts.setAdapter(adapter);
 
-        loadJobPostsFromServer();
+        loadJobPostsFromSupabase();
 
         return view;
     }
@@ -50,58 +48,73 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        loadJobPostsFromServer(); // reload each time returning to Home
+        loadJobPostsFromSupabase();
     }
 
-    private void loadJobPostsFromServer() {
-        String url = ApiClient.BASE_URL + "get_job_posts.php";
+    // ✅ LOAD JOB POSTS FROM SUPABASE
+    private void loadJobPostsFromSupabase() {
 
-        JsonObjectRequest request = new JsonObjectRequest(
+        String url = SupabaseConfig.SUPABASE_URL
+                + "/rest/v1/job_posts?select=*"
+                + "&order=created_at.desc";
+
+        JsonArrayRequest request = new JsonArrayRequest(
                 Request.Method.GET,
                 url,
                 null,
                 response -> {
                     try {
-                        boolean success = response.optBoolean("success", false);
-                        if (!success) {
-                            String msg = response.optString("message", "Failed to load job posts");
-                            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        JSONArray data = response.getJSONArray("data");
                         ArrayList<JobPostItem> list = new ArrayList<>();
 
-                        for (int i = 0; i < data.length(); i++) {
-                            JSONObject obj = data.getJSONObject(i);
+                        for (int i = 0; i < response.length(); i++) {
+                            JSONObject obj = response.getJSONObject(i);
 
-                            int id = obj.getInt("id");
-                            int userId = obj.getInt("user_id");
-                            String title = obj.getString("title");
-                            String desc = obj.getString("description");
+                            int id = obj.optInt("id", 0); // optional if exists
+                            String userId = obj.optString("user_id", ""); // ✅ UUID STRING
+                            String title = obj.optString("title", "");
+                            String desc = obj.optString("content", "");
                             String mediaUrl = obj.isNull("media_url") ? "" : obj.getString("media_url");
-                            String recruiterName = obj.optString("recruiter_name", "");
-                            String recruiterEmail = obj.optString("recruiter_email", "");
                             String createdAt = obj.optString("created_at", "");
 
-                            list.add(new JobPostItem(id, userId, title, desc, mediaUrl,
-                                    recruiterName, recruiterEmail, createdAt));
+                            // Recruiter info (optional if not in table)
+                            String recruiterName = obj.optString("recruiter_name", "");
+                            String recruiterEmail = obj.optString("recruiter_email", "");
+
+                            list.add(new JobPostItem(
+                                    id,
+                                    userId,         // ✅ STRING
+                                    title,
+                                    desc,
+                                    mediaUrl,
+                                    recruiterName,
+                                    recruiterEmail,
+                                    createdAt
+                            ));
                         }
 
                         adapter.updateData(list);
 
-                    } catch (JSONException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                         Toast.makeText(getContext(), "Parse error", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
                     error.printStackTrace();
-                    Toast.makeText(getContext(), "Network error loading job posts", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Failed to load job posts", Toast.LENGTH_SHORT).show();
                 }
-        );
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                return headers;
+            }
+        };
 
         ApiClient.getRequestQueue(requireContext()).add(request);
     }
 }
+
 

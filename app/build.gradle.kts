@@ -39,7 +39,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.2.2")
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.2.2")
+    implementation("io.ktor:ktor-client-okhttp:2.3.7")
     // Gson
     implementation("com.google.code.gson:gson:2.10.1")
     // Volley - Added for Database Connection

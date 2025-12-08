@@ -13,7 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-public class ExperiencePostAdapter extends RecyclerView.Adapter<ExperiencePostAdapter.PostViewHolder> {
+public class ExperiencePostAdapter
+        extends RecyclerView.Adapter<ExperiencePostAdapter.PostViewHolder> {
 
     private List<ExperiencePostItem> posts;
 
@@ -36,29 +37,35 @@ public class ExperiencePostAdapter extends RecyclerView.Adapter<ExperiencePostAd
 
     @Override
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
-        ExperiencePostItem item = posts.get(position);
-        holder.tvTitle.setText(item.title);
-        holder.tvDate.setText(item.createdAt);
-        holder.tvDescription.setText(item.description);
 
-        // Reset visibility
+        ExperiencePostItem item = posts.get(position);
+
+        // ✅ Safe text binding
+        holder.tvTitle.setText(item.getTitle());
+        holder.tvDate.setText(item.getCreatedAt());
+        holder.tvDescription.setText(item.getDescription());
+
+        // ✅ Reset views (VERY IMPORTANT for RecyclerView)
         holder.ivImage.setVisibility(View.GONE);
         holder.vvVideo.setVisibility(View.GONE);
+        holder.vvVideo.stopPlayback();
 
-        if (item.mediaUrl != null && !item.mediaUrl.isEmpty()) {
-            // Since ExperiencePostItem might not have a type field, we'll try to guess or default to Image
-            // If you have a type field in ExperiencePostItem, use it here.
+        String mediaUrl = item.getMediaUrl();
+        String mediaType = item.getMediaType(); // ✅ image / video
+
+        if (mediaUrl != null && !mediaUrl.isEmpty()) {
             try {
-                Uri uri = Uri.parse(item.mediaUrl);
-                // Basic check based on extension or just assume image for legacy items
-                if (item.mediaUrl.contains(".mp4") || item.mediaUrl.contains("video")) {
+                Uri uri = Uri.parse(mediaUrl);
+
+                if ("video".equalsIgnoreCase(mediaType)) {
                     holder.vvVideo.setVisibility(View.VISIBLE);
                     holder.vvVideo.setVideoURI(uri);
-                    holder.vvVideo.seekTo(1);
+                    holder.vvVideo.seekTo(1); // ✅ preview frame only
                 } else {
                     holder.ivImage.setVisibility(View.VISIBLE);
                     holder.ivImage.setImageURI(uri);
                 }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -70,18 +77,19 @@ public class ExperiencePostAdapter extends RecyclerView.Adapter<ExperiencePostAd
         return posts != null ? posts.size() : 0;
     }
 
+    // ✅ ViewHolder
     static class PostViewHolder extends RecyclerView.ViewHolder {
+
         TextView tvTitle, tvDate, tvDescription;
         ImageView ivImage;
         VideoView vvVideo;
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
+
             tvTitle = itemView.findViewById(R.id.tv_post_title);
             tvDate = itemView.findViewById(R.id.tv_post_date);
             tvDescription = itemView.findViewById(R.id.tv_post_description);
-            
-            // Updated to use the new views in the layout
             ivImage = itemView.findViewById(R.id.iv_post_image);
             vvVideo = itemView.findViewById(R.id.vv_post_video);
         }
