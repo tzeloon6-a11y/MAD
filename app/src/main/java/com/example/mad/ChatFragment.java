@@ -115,16 +115,25 @@ public class ChatFragment extends Fragment {
                                 ));
                             }
 
+                            // If no chats found, show example chats
+                            if (chatList.isEmpty()) {
+                                chatList = getExampleChats();
+                            }
+
                             adapter.updateData(chatList);
 
                         } catch (Exception e) {
                             e.printStackTrace();
-                            Toast.makeText(getContext(), "Error parsing chats", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "Error parsing chats. Showing examples...", Toast.LENGTH_SHORT).show();
+                            // Show example chats on error
+                            adapter.updateData(getExampleChats());
                         }
                     },
                     error -> {
                         error.printStackTrace();
-                        Toast.makeText(getContext(), "Failed to load chats", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Failed to load chats. Showing examples...", Toast.LENGTH_SHORT).show();
+                        // Show example chats when loading fails
+                        adapter.updateData(getExampleChats());
                     }
             ) {
                 @Override
@@ -141,7 +150,63 @@ public class ChatFragment extends Fragment {
 
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(getContext(), "Error loading chats", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Error loading chats. Showing examples...", Toast.LENGTH_SHORT).show();
+            // Show example chats on exception
+            adapter.updateData(getExampleChats());
         }
+    }
+
+    /**
+     * Creates example/mock chats for demonstration purposes
+     * These will be shown when database query fails or returns empty
+     */
+    private ArrayList<ChatModel> getExampleChats() {
+        ArrayList<ChatModel> exampleChats = new ArrayList<>();
+        
+        // Example Chat 1: Software Developer Position
+        exampleChats.add(new ChatModel(
+                "example-chat-1",
+                "example-job-1",
+                "example-student-1",
+                currentUserId != null ? currentUserId : "example-recruiter-1",
+                "Software Developer - Full Stack",
+                "Hi! I'm very interested in this position. I have 3 years of experience...",
+                "2025-01-15T14:30:00"
+        ));
+        
+        // Example Chat 2: Marketing Intern
+        exampleChats.add(new ChatModel(
+                "example-chat-2",
+                "example-job-2",
+                "example-student-2",
+                currentUserId != null ? currentUserId : "example-recruiter-2",
+                "Marketing Intern - Summer 2025",
+                "Thank you for considering my application. I'm excited about...",
+                "2025-01-14T10:15:00"
+        ));
+        
+        // Example Chat 3: Data Analyst
+        exampleChats.add(new ChatModel(
+                "example-chat-3",
+                "example-job-3",
+                currentUserId != null ? currentUserId : "example-student-3",
+                "example-recruiter-3",
+                "Junior Data Analyst Position",
+                "I saw your job posting and I believe my skills match perfectly...",
+                "2025-01-13T16:45:00"
+        ));
+        
+        // Example Chat 4: UI/UX Designer
+        exampleChats.add(new ChatModel(
+                "example-chat-4",
+                "example-job-4",
+                "example-student-4",
+                currentUserId != null ? currentUserId : "example-recruiter-4",
+                "UI/UX Designer - Remote",
+                "Hello! I'm a creative designer with a passion for user experience...",
+                "2025-01-12T09:20:00"
+        ));
+        
+        return exampleChats;
     }
 }
