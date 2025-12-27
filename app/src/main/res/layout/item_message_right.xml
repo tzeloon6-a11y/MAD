@@ -12,10 +12,9 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:layout_marginStart="64dp"
-        android:cardBackgroundColor="@color/app_blue"
-        android:cardCornerRadius="12dp"
-        android:cardElevation="2dp"
-        app:cardCornerRadius="12dp">
+        app:cardBackgroundColor="@color/app_blue"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp">
 
         <LinearLayout
             android:layout_width="match_parent"
