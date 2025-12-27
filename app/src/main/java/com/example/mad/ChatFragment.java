@@ -1,5 +1,6 @@
 package com.example.mad;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -40,7 +41,7 @@ public class ChatFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_chat, container, false);
 
         // Get current user ID
-        SharedPreferences prefs = requireActivity().getSharedPreferences(LoginActivity.PREFS_NAME, requireContext().MODE_PRIVATE);
+        SharedPreferences prefs = requireActivity().getSharedPreferences(LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
         currentUserId = prefs.getString(LoginActivity.KEY_USER_ID, null);
 
         if (currentUserId == null) {
