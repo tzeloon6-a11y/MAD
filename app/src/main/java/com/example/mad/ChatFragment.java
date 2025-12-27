@@ -54,6 +54,12 @@ public class ChatFragment extends Fragment {
         recyclerChatList.setLayoutManager(new LinearLayoutManager(getContext()));
 
         adapter = new ChatListAdapter(new ArrayList<>(), chatId -> {
+            // Check if this is an example chat (starts with "example-")
+            if (chatId != null && chatId.startsWith("example-")) {
+                Toast.makeText(getContext(), "This is an example chat. Create a real chat by applying to a job or starting a chat from an application.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            
             // Open ChatDetailActivity with chatId
             Intent intent = new Intent(getActivity(), ChatDetailActivity.class);
             intent.putExtra("chatId", chatId);
@@ -78,12 +84,19 @@ public class ChatFragment extends Fragment {
 
     private void loadChatsFromSupabase() {
         try {
+            // First, test basic connection with a simple query
             // Query chats where current user is either student or recruiter
             String encodedUserId = URLEncoder.encode(currentUserId, "UTF-8");
+            
+            // Build query - try OR syntax first
+            // Note: If this fails, the table might not exist or column names might be different
             String url = SupabaseConfig.SUPABASE_URL
                     + "/rest/v1/chats?select=*"
                     + "&or=(student_id.eq." + encodedUserId + ",recruiter_id.eq." + encodedUserId + ")"
                     + "&order=timestamp.desc";
+            
+            android.util.Log.d("ChatFragment", "Loading chats from: " + url);
+            android.util.Log.d("ChatFragment", "Current User ID: " + currentUserId);
 
             JsonArrayRequest request = new JsonArrayRequest(
                     Request.Method.GET,
@@ -131,7 +144,26 @@ public class ChatFragment extends Fragment {
                     },
                     error -> {
                         error.printStackTrace();
-                        Toast.makeText(getContext(), "Failed to load chats. Showing examples...", Toast.LENGTH_SHORT).show();
+                        
+                        // Log detailed error information
+                        String errorMessage = "Failed to load chats";
+                        if (error.networkResponse != null) {
+                            errorMessage += " - Status: " + error.networkResponse.statusCode;
+                            if (error.networkResponse.data != null) {
+                                try {
+                                    String errorBody = new String(error.networkResponse.data, "UTF-8");
+                                    errorMessage += " - " + errorBody;
+                                    android.util.Log.e("ChatFragment", "Supabase Error: " + errorBody);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } else {
+                            errorMessage += " - Network error: " + error.getMessage();
+                            android.util.Log.e("ChatFragment", "Network Error: " + error.getMessage());
+                        }
+                        
+                        Toast.makeText(getContext(), errorMessage, Toast.LENGTH_LONG).show();
                         // Show example chats when loading fails
                         adapter.updateData(getExampleChats());
                     }
