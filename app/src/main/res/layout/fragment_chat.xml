@@ -1,19 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/classic_background"
-    android:gravity="center"
-    android:fitsSystemWindows="true"
-    android:paddingTop="16dp">
+    android:fitsSystemWindows="true">
 
-    <TextView
-        android:id="@+id/tv_chat"
-        android:layout_width="wrap_content"
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Chat"
-        android:textColor="@color/app_blue"
-        android:textStyle="bold"
-        android:textSize="24sp" />
+        android:orientation="horizontal"
+        android:background="@color/app_blue"
+        android:padding="16dp"
+        android:gravity="center_vertical">
 
-</FrameLayout>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Messages"
+            android:textColor="@color/white"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- RecyclerView for Chat List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_chat_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>
