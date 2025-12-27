@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/classic_background"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Job Title -->
+        <TextView
+            android:id="@+id/tv_job_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Job Title"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:textColor="@color/app_blue"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Recruiter Name -->
+        <TextView
+            android:id="@+id/tv_recruiter_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Posted by: Recruiter Name"
+            android:textSize="14sp"
+            android:textColor="@color/classic_text_secondary"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Job Description -->
+        <TextView
+            android:id="@+id/tv_job_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Job Description"
+            android:textSize="16sp"
+            android:textColor="@color/classic_text_primary"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Apply Button (for Students) -->
+        <Button
+            android:id="@+id/btn_apply"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="Interested"
+            android:backgroundTint="@color/app_blue"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- Applicants Section (for Recruiters) -->
+        <TextView
+            android:id="@+id/tv_applicants_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Applicants"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:textColor="@color/app_blue"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
+        <!-- RecyclerView for Applicants -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_applicants"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="200dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</ScrollView>
+
