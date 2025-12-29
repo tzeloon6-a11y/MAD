@@ -293,14 +293,19 @@ public class JobDetailActivity extends AppCompatActivity {
             
             // Query Applications collection using snake_case column names
             // CRITICAL: Use snake_case - student_id and job_id
+            // Try alternative format: using AND operator explicitly
             String checkUrl = SupabaseConfig.SUPABASE_URL
                     + "/rest/v1/applications?student_id=eq." + encodedUserId
                     + "&job_id=eq." + encodedJobId
                     + "&select=application_id"
                     + "&limit=1";
 
-            android.util.Log.d("JobDetailActivity", "Checking application: " + checkUrl);
-            android.util.Log.d("JobDetailActivity", "student_id: " + studentId + ", job_id: " + jobId);
+            android.util.Log.d("JobDetailActivity", "🔍 Checking application status...");
+            android.util.Log.d("JobDetailActivity", "📋 Request URL: " + checkUrl);
+            android.util.Log.d("JobDetailActivity", "👤 student_id: " + studentId);
+            android.util.Log.d("JobDetailActivity", "💼 job_id: " + jobId);
+            android.util.Log.d("JobDetailActivity", "🔐 Encoded student_id: " + encodedUserId);
+            android.util.Log.d("JobDetailActivity", "🔐 Encoded job_id: " + encodedJobId);
 
             JsonArrayRequest checkRequest = new JsonArrayRequest(
                     Request.Method.GET,
@@ -308,20 +313,26 @@ public class JobDetailActivity extends AppCompatActivity {
                     null,
                     response -> {
                         try {
+                            // CRITICAL: Log the actual response for debugging
+                            android.util.Log.d("JobDetailActivity", "Response received: " + (response != null ? response.toString() : "null"));
+                            android.util.Log.d("JobDetailActivity", "Response length: " + (response != null ? response.length() : 0));
+                            
                             // CRITICAL: Handle response carefully
                             // If data is not null and data.size() > 0, it means Already Applied
                             if (response != null && response.length() > 0) {
                                 // Application exists - user has already applied
-                                android.util.Log.d("JobDetailActivity", "Application found - user already applied");
+                                android.util.Log.d("JobDetailActivity", "✅ Application found - user already applied");
+                                android.util.Log.d("JobDetailActivity", "Response content: " + response.toString());
                                 callback.onResult(true, null);
                             } else {
                                 // No application found - user can apply
-                                android.util.Log.d("JobDetailActivity", "No application found - user can apply");
+                                android.util.Log.d("JobDetailActivity", "❌ No application found - user can apply");
                                 callback.onResult(false, null);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
-                            android.util.Log.e("JobDetailActivity", "Error parsing response", e);
+                            android.util.Log.e("JobDetailActivity", "❌ Error parsing response", e);
+                            android.util.Log.e("JobDetailActivity", "Exception details: " + e.getMessage());
                             // On parsing error, return error in callback
                             callback.onResult(false, "Error parsing response: " + e.getMessage());
                         }
@@ -335,15 +346,25 @@ public class JobDetailActivity extends AppCompatActivity {
                             int statusCode = error.networkResponse.statusCode;
                             errorMessage = "HTTP " + statusCode;
                             
+                            android.util.Log.e("JobDetailActivity", "❌ Supabase Error - Status Code: " + statusCode);
+                            android.util.Log.e("JobDetailActivity", "❌ Request URL: " + checkUrl);
+                            
                             if (error.networkResponse.data != null) {
                                 try {
                                     String errorBody = new String(error.networkResponse.data, java.nio.charset.StandardCharsets.UTF_8);
                                     errorMessage += ": " + errorBody;
-                                    android.util.Log.e("JobDetailActivity", "Supabase Error Response: " + errorBody);
+                                    android.util.Log.e("JobDetailActivity", "❌ Supabase Error Response Body: " + errorBody);
                                     
                                     // If table doesn't exist (404), provide specific message
                                     if (statusCode == 404) {
                                         errorMessage = "Applications table not found (404). Please create the table in Supabase.";
+                                        android.util.Log.e("JobDetailActivity", "❌ Table 'applications' does not exist in Supabase!");
+                                    } else if (statusCode == 400) {
+                                        android.util.Log.e("JobDetailActivity", "❌ Bad Request (400) - Check column names: student_id, job_id");
+                                    } else if (statusCode == 401) {
+                                        android.util.Log.e("JobDetailActivity", "❌ Unauthorized (401) - Check Supabase API key");
+                                    } else if (statusCode == 406) {
+                                        android.util.Log.e("JobDetailActivity", "❌ Not Acceptable (406) - Check RLS policies");
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -351,7 +372,8 @@ public class JobDetailActivity extends AppCompatActivity {
                             }
                         } else {
                             errorMessage = "Network error: " + (error.getMessage() != null ? error.getMessage() : "Unknown error");
-                            android.util.Log.e("JobDetailActivity", "Network Error: " + errorMessage);
+                            android.util.Log.e("JobDetailActivity", "❌ Network Error: " + errorMessage);
+                            android.util.Log.e("JobDetailActivity", "❌ Request URL: " + checkUrl);
                         }
                         
                         // Return error in callback

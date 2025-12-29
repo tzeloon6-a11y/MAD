@@ -46,4 +46,8 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     // Volley - Added for Database Connection
     implementation("com.android.volley:volley:1.2.1")
+    // RecyclerView - Required for RecyclerView.Adapter
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    // Fragment - Required for Fragment classes
+    implementation("androidx.fragment:fragment:1.6.2")
 }

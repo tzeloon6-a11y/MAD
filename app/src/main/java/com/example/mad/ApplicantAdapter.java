@@ -373,3 +373,4 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
     }
 }
 
+
