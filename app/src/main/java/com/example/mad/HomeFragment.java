@@ -72,7 +72,8 @@ public class HomeFragment extends Fragment {
                             int id = obj.optInt("id", 0); // optional if exists
                             String userId = obj.optString("user_id", ""); // ✅ UUID STRING
                             String title = obj.optString("title", "");
-                            String desc = obj.optString("content", "");
+                            // Try "description" first (as saved by PostFragment), fallback to "content"
+                            String desc = obj.optString("description", obj.optString("content", ""));
                             String mediaUrl = obj.isNull("media_url") ? "" : obj.getString("media_url");
                             String createdAt = obj.optString("created_at", "");
 

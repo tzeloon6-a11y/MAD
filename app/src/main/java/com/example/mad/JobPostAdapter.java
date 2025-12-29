@@ -1,5 +1,6 @@
 package com.example.mad;
 
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,18 @@ public class JobPostAdapter extends RecyclerView.Adapter<JobPostAdapter.JobPostV
         holder.tvDesc.setText(item.getDescription());
         holder.tvRecruiter.setText("By: " + item.getRecruiterName());
         holder.tvCreatedAt.setText(item.getCreatedAt());
+        
+        // Add click listener to navigate to JobDetailActivity
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), JobDetailActivity.class);
+            // Convert job ID to string
+            intent.putExtra("jobId", String.valueOf(item.getId()));
+            intent.putExtra("jobTitle", item.getTitle());
+            intent.putExtra("jobDescription", item.getDescription());
+            intent.putExtra("recruiterId", item.getUserId());
+            intent.putExtra("recruiterName", item.getRecruiterName());
+            v.getContext().startActivity(intent);
+        });
     }
 
     @Override
