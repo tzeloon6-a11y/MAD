@@ -369,6 +369,11 @@ public class JobDetailActivity extends AppCompatActivity {
         };
 
         ApiClient.getRequestQueue(this).add(checkRequest);
+        } catch (Exception e) {
+            e.printStackTrace();
+            android.util.Log.e("JobDetailActivity", "Exception in checkIfApplied", e);
+            callback.onResult(false, "Exception: " + e.getMessage());
+        }
     }
 
     // Load applicants for recruiter view
