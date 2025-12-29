@@ -137,10 +137,10 @@ public class JobDetailActivity extends AppCompatActivity {
             if (hasApplied) {
                 // Already applied - disable button
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(JobDetailActivity.this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
                     btnApply.setText("Applied");
                     btnApply.setEnabled(false);
-                    hasApplied = true;
+                    JobDetailActivity.this.hasApplied = true;
                 });
             } else {
                 // No duplicate - proceed with dialog
@@ -198,10 +198,10 @@ public class JobDetailActivity extends AppCompatActivity {
                 url,
                 response -> {
                     // Success - update UI
-                    Toast.makeText(this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(JobDetailActivity.this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
                     btnApply.setText("Applied");
                     btnApply.setEnabled(false);
-                    hasApplied = true;
+                    JobDetailActivity.this.hasApplied = true;
                 },
                 error -> {
                     String responseBody = null;
@@ -270,7 +270,7 @@ public class JobDetailActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     btnApply.setText("Applied");
                     btnApply.setEnabled(false);
-                    hasApplied = true;
+                    JobDetailActivity.this.hasApplied = true;
                 });
             }
         });
