@@ -103,6 +103,13 @@ public class JobDetailActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Interface for application check callback
+     */
+    interface ApplicationCheckCallback {
+        void onResult(boolean hasApplied, String error);
+    }
+
     private void onApplyButtonClicked() {
         // Critical: Check for duplicate application BEFORE showing dialog
         checkForDuplicateApplication(() -> {
@@ -117,51 +124,29 @@ public class JobDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Query Applications collection for existing application
-        String checkUrl = SupabaseConfig.SUPABASE_URL
-                + "/rest/v1/applications?student_id=eq." + currentUserId
-                + "&job_id=eq." + currentJobId
-                + "&select=application_id"
-                + "&limit=1";
-
-        JsonArrayRequest checkRequest = new JsonArrayRequest(
-                Request.Method.GET,
-                checkUrl,
-                null,
-                response -> {
-                    try {
-                        // If response has any items, application already exists
-                        if (response.length() > 0) {
-                            // Duplicate found - show message and disable button
-                            Toast.makeText(this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
-                            btnApply.setText("Applied");
-                            btnApply.setEnabled(false);
-                            hasApplied = true;
-                        } else {
-                            // No duplicate - proceed with dialog
-                            onNoDuplicate.run();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        Toast.makeText(this, "Error checking application status", Toast.LENGTH_SHORT).show();
-                    }
-                },
-                error -> {
-                    error.printStackTrace();
-                    Toast.makeText(this, "Failed to check application status", Toast.LENGTH_SHORT).show();
-                }
-        ) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
-                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
-                headers.put("Content-Type", "application/json");
-                return headers;
+        // Use snake_case column names: student_id and job_id
+        checkIfApplied(currentUserId, currentJobId, (hasApplied, error) -> {
+            if (error != null) {
+                // Log error but allow user to proceed
+                android.util.Log.e("JobDetailActivity", "Error checking application: " + error);
+                Toast.makeText(this, "Could not verify application status. You can still apply.", Toast.LENGTH_SHORT).show();
+                onNoDuplicate.run();
+                return;
             }
-        };
-
-        ApiClient.getRequestQueue(this).add(checkRequest);
+            
+            if (hasApplied) {
+                // Already applied - disable button
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
+                    btnApply.setText("Applied");
+                    btnApply.setEnabled(false);
+                    hasApplied = true;
+                });
+            } else {
+                // No duplicate - proceed with dialog
+                onNoDuplicate.run();
+            }
+        });
     }
 
     private void showPitchDialog() {
@@ -262,38 +247,117 @@ public class JobDetailActivity extends AppCompatActivity {
         ApiClient.getRequestQueue(this).add(request);
     }
 
+    /**
+     * Check if user has already applied to this job (called on activity start)
+     * Refactored to use checkIfApplied helper function
+     */
     private void checkIfAlreadyApplied() {
         // Check on activity start to set button state correctly
         if (currentJobId == null || currentUserId == null) {
             return;
         }
 
-        String checkUrl = SupabaseConfig.SUPABASE_URL
-                + "/rest/v1/applications?student_id=eq." + currentUserId
-                + "&job_id=eq." + currentJobId
-                + "&select=application_id"
-                + "&limit=1";
+        // Use snake_case column names: student_id and job_id
+        checkIfApplied(currentUserId, currentJobId, (hasApplied, error) -> {
+            if (error != null) {
+                // Log error but don't show toast on initial check
+                android.util.Log.d("JobDetailActivity", "Initial check failed: " + error);
+                return;
+            }
+            
+            if (hasApplied) {
+                // Already applied - update UI
+                runOnUiThread(() -> {
+                    btnApply.setText("Applied");
+                    btnApply.setEnabled(false);
+                    hasApplied = true;
+                });
+            }
+        });
+    }
 
-        JsonArrayRequest checkRequest = new JsonArrayRequest(
-                Request.Method.GET,
-                checkUrl,
-                null,
-                response -> {
-                    try {
-                        if (response.length() > 0) {
-                            // Already applied
-                            btnApply.setText("Applied");
-                            btnApply.setEnabled(false);
-                            hasApplied = true;
+    /**
+     * Helper function to check if application exists
+     * Uses snake_case column names: student_id and job_id
+     * 
+     * CRITICAL FIXES:
+     * - Uses snake_case for column names: student_id and job_id
+     * - Handles response carefully: If data is not null and data.size() > 0, it means Already Applied
+     * - If error is not null, logs the error message
+     */
+    private void checkIfApplied(String studentId, String jobId, ApplicationCheckCallback callback) {
+        try {
+            // URL encode the IDs to handle special characters
+            String encodedUserId = java.net.URLEncoder.encode(studentId, "UTF-8");
+            String encodedJobId = java.net.URLEncoder.encode(jobId, "UTF-8");
+            
+            // Query Applications collection using snake_case column names
+            // CRITICAL: Use snake_case - student_id and job_id
+            String checkUrl = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/applications?student_id=eq." + encodedUserId
+                    + "&job_id=eq." + encodedJobId
+                    + "&select=application_id"
+                    + "&limit=1";
+
+            android.util.Log.d("JobDetailActivity", "Checking application: " + checkUrl);
+            android.util.Log.d("JobDetailActivity", "student_id: " + studentId + ", job_id: " + jobId);
+
+            JsonArrayRequest checkRequest = new JsonArrayRequest(
+                    Request.Method.GET,
+                    checkUrl,
+                    null,
+                    response -> {
+                        try {
+                            // CRITICAL: Handle response carefully
+                            // If data is not null and data.size() > 0, it means Already Applied
+                            if (response != null && response.length() > 0) {
+                                // Application exists - user has already applied
+                                android.util.Log.d("JobDetailActivity", "Application found - user already applied");
+                                callback.onResult(true, null);
+                            } else {
+                                // No application found - user can apply
+                                android.util.Log.d("JobDetailActivity", "No application found - user can apply");
+                                callback.onResult(false, null);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            android.util.Log.e("JobDetailActivity", "Error parsing response", e);
+                            // On parsing error, return error in callback
+                            callback.onResult(false, "Error parsing response: " + e.getMessage());
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    },
+                    error -> {
+                        error.printStackTrace();
+                        
+                        // CRITICAL: If error is not null, log the error message
+                        String errorMessage = null;
+                        if (error.networkResponse != null) {
+                            int statusCode = error.networkResponse.statusCode;
+                            errorMessage = "HTTP " + statusCode;
+                            
+                            if (error.networkResponse.data != null) {
+                                try {
+                                    String errorBody = new String(error.networkResponse.data, java.nio.charset.StandardCharsets.UTF_8);
+                                    errorMessage += ": " + errorBody;
+                                    android.util.Log.e("JobDetailActivity", "Supabase Error Response: " + errorBody);
+                                    
+                                    // If table doesn't exist (404), provide specific message
+                                    if (statusCode == 404) {
+                                        errorMessage = "Applications table not found (404). Please create the table in Supabase.";
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } else {
+                            errorMessage = "Network error: " + (error.getMessage() != null ? error.getMessage() : "Unknown error");
+                            android.util.Log.e("JobDetailActivity", "Network Error: " + errorMessage);
+                        }
+                        
+                        // Return error in callback
+                        callback.onResult(false, errorMessage);
                     }
-                },
-                error -> {
-                    // Silent fail on initial check
-                }
-        ) {
+            ) {
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
