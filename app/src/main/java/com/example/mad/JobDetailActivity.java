@@ -134,16 +134,24 @@ public class JobDetailActivity extends AppCompatActivity {
 
     private void checkForDuplicateApplication(Runnable onNoDuplicate) {
         if (currentJobId == null || currentUserId == null) {
+            android.util.Log.e("JobDetailActivity", "❌ Missing data - currentJobId: " + currentJobId + ", currentUserId: " + currentUserId);
             Toast.makeText(this, "Invalid job or user data", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        android.util.Log.d("JobDetailActivity", "🔍 Starting duplicate check...");
+        android.util.Log.d("JobDetailActivity", "📝 currentUserId: " + currentUserId);
+        android.util.Log.d("JobDetailActivity", "📝 currentJobId: " + currentJobId);
 
         // Use snake_case column names: student_id and job_id
         checkIfApplied(currentUserId, currentJobId, (hasApplied, error) -> {
             if (error != null) {
                 // Log error but allow user to proceed
-                android.util.Log.e("JobDetailActivity", "Error checking application: " + error);
-                Toast.makeText(this, "Could not verify application status. You can still apply.", Toast.LENGTH_SHORT).show();
+                android.util.Log.e("JobDetailActivity", "❌ Error checking application: " + error);
+                android.util.Log.e("JobDetailActivity", "⚠️ Allowing user to proceed despite error");
+                runOnUiThread(() -> {
+                    Toast.makeText(JobDetailActivity.this, "Could not verify application status. You can still apply.", Toast.LENGTH_SHORT).show();
+                });
                 onNoDuplicate.run();
                 return;
             }
@@ -321,19 +329,23 @@ public class JobDetailActivity extends AppCompatActivity {
             
             // Query Applications collection using snake_case column names
             // CRITICAL: Use snake_case - student_id and job_id
-            // Try alternative format: using AND operator explicitly
+            // Supabase PostgREST format: multiple filters with & separator
+            // Format: /rest/v1/table?column1=eq.value1&column2=eq.value2&select=column&limit=1
             String checkUrl = SupabaseConfig.SUPABASE_URL
-                    + "/rest/v1/applications?student_id=eq." + encodedUserId
+                    + "/rest/v1/applications"
+                    + "?student_id=eq." + encodedUserId
                     + "&job_id=eq." + encodedJobId
                     + "&select=application_id"
                     + "&limit=1";
 
             android.util.Log.d("JobDetailActivity", "🔍 Checking application status...");
-            android.util.Log.d("JobDetailActivity", "📋 Request URL: " + checkUrl);
-            android.util.Log.d("JobDetailActivity", "👤 student_id: " + studentId);
-            android.util.Log.d("JobDetailActivity", "💼 job_id: " + jobId);
-            android.util.Log.d("JobDetailActivity", "🔐 Encoded student_id: " + encodedUserId);
-            android.util.Log.d("JobDetailActivity", "🔐 Encoded job_id: " + encodedJobId);
+            android.util.Log.d("JobDetailActivity", "📋 Full Request URL: " + checkUrl);
+            android.util.Log.d("JobDetailActivity", "🌐 Supabase URL: " + SupabaseConfig.SUPABASE_URL);
+            android.util.Log.d("JobDetailActivity", "📊 Table: applications");
+            android.util.Log.d("JobDetailActivity", "👤 student_id (raw): " + studentId);
+            android.util.Log.d("JobDetailActivity", "💼 job_id (raw): " + jobId);
+            android.util.Log.d("JobDetailActivity", "🔐 student_id (encoded): " + encodedUserId);
+            android.util.Log.d("JobDetailActivity", "🔐 job_id (encoded): " + encodedJobId);
 
             JsonArrayRequest checkRequest = new JsonArrayRequest(
                     Request.Method.GET,
@@ -414,10 +426,14 @@ public class JobDetailActivity extends AppCompatActivity {
                 headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
                 headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
                 headers.put("Content-Type", "application/json");
+                headers.put("Prefer", "return=representation");
+                // Log first 20 chars of API key for debugging (not full key for security)
+                android.util.Log.d("JobDetailActivity", "🔑 API Key (first 20 chars): " + (SupabaseConfig.SUPABASE_KEY != null ? SupabaseConfig.SUPABASE_KEY.substring(0, Math.min(20, SupabaseConfig.SUPABASE_KEY.length())) + "..." : "NULL"));
                 return headers;
             }
         };
 
+        android.util.Log.d("JobDetailActivity", "📤 Sending request to Supabase...");
         ApiClient.getRequestQueue(this).add(checkRequest);
         } catch (Exception e) {
             e.printStackTrace();
