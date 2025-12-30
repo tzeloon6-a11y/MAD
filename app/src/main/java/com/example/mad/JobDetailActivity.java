@@ -111,8 +111,22 @@ public class JobDetailActivity extends AppCompatActivity {
     }
 
     private void onApplyButtonClicked() {
+        // Prevent multiple clicks
+        if (hasApplied) {
+            return;
+        }
+        
+        // Disable button immediately to prevent multiple clicks
+        btnApply.setEnabled(false);
+        btnApply.setText("Checking...");
+        
         // Critical: Check for duplicate application BEFORE showing dialog
         checkForDuplicateApplication(() -> {
+            // Re-enable button if check passes (user can proceed)
+            runOnUiThread(() -> {
+                btnApply.setEnabled(true);
+                btnApply.setText("Interested");
+            });
             // This callback runs if no duplicate exists
             showPitchDialog();
         });
@@ -193,26 +207,40 @@ public class JobDetailActivity extends AppCompatActivity {
         // Save to Applications collection
         String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/applications";
 
+        // Show loading state
+        runOnUiThread(() -> {
+            btnApply.setEnabled(false);
+            btnApply.setText("Submitting...");
+        });
+        
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 url,
                 response -> {
-                    // Success - update UI
-                    Toast.makeText(JobDetailActivity.this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
-                    btnApply.setText("Applied");
-                    btnApply.setEnabled(false);
-                    JobDetailActivity.this.hasApplied = true;
+                    // Success - update UI on main thread
+                    runOnUiThread(() -> {
+                        Toast.makeText(JobDetailActivity.this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
+                        btnApply.setText("Applied");
+                        btnApply.setEnabled(false);
+                        JobDetailActivity.this.hasApplied = true;
+                    });
                 },
                 error -> {
+                    // Error - re-enable button and show error
                     String responseBody = null;
                     if (error.networkResponse != null && error.networkResponse.data != null) {
                         try {
                             responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
+                            android.util.Log.e("JobDetailActivity", "Application submission error: " + responseBody);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
-                    Toast.makeText(this, "Failed to submit application", Toast.LENGTH_SHORT).show();
+                    runOnUiThread(() -> {
+                        Toast.makeText(JobDetailActivity.this, "Failed to submit application. Please try again.", Toast.LENGTH_SHORT).show();
+                        btnApply.setEnabled(true);
+                        btnApply.setText("Interested");
+                    });
                 }
         ) {
             @Override
