@@ -2,9 +2,7 @@ package com.example.mad;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-
 import android.os.Bundle;
-
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -18,9 +16,9 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
-        // Default fragment (Home)
+        // CHANGE 1: Load YOUR fragment by default when app starts
         if (savedInstanceState == null) {
-            loadFragment(new HomeFragment());
+            loadFragment(new RecruiterHomeFragment());
         }
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
@@ -28,7 +26,8 @@ public class MainActivity extends AppCompatActivity {
 
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                selectedFragment = new HomeFragment();
+                // CHANGE 2: Load YOUR fragment when Home is clicked
+                selectedFragment = new RecruiterHomeFragment();
             } else if (id == R.id.nav_chat) {
                 selectedFragment = new ChatFragment();
             } else if (id == R.id.nav_post) {
