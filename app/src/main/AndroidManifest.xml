@@ -33,6 +33,9 @@
         <activity android:name=".ChatDetailActivity" />
 
         <activity android:name=".JobDetailActivity" />
+
+        <activity android:name=".EditProfileActivity" android:exported="false" />
+
     </application>
 
 </manifest>

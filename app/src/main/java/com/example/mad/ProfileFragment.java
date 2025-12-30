@@ -23,15 +23,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 public class ProfileFragment extends Fragment {
 
-    private TextView tvName, tvRole, tvResumeStatus;
+    private TextView tvName, tvRole, tvResumeStatus, tvPhone, tvBio;
     private RecyclerView rvExperience;
     private ExperiencePostAdapter adapter;
-    private MaterialButton btnLogout;
+    private MaterialButton btnLogout, btnEditProfile;
 
     public ProfileFragment() { }
 
@@ -41,117 +40,107 @@ public class ProfileFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
+        // Initialize all TextViews including new ones
         tvName = view.findViewById(R.id.tv_profile_name);
         tvRole = view.findViewById(R.id.tv_profile_role);
+        tvPhone = view.findViewById(R.id.tv_profile_phone);
+        tvBio = view.findViewById(R.id.tv_profile_bio);
         tvResumeStatus = view.findViewById(R.id.tv_resume_status);
+
         rvExperience = view.findViewById(R.id.rv_experience_posts);
         btnLogout = view.findViewById(R.id.btn_logout);
+        btnEditProfile = view.findViewById(R.id.btn_edit_profile);
 
+        // Setup RecyclerView
+        rvExperience.setLayoutManager(new LinearLayoutManager(getContext()));
+        adapter = new ExperiencePostAdapter(new ArrayList<>());
+        rvExperience.setAdapter(adapter);
+
+        // Set initial data
+        refreshProfileData();
+        loadExperiencePostsFromSupabase();
+
+        // Button Listeners
+        btnEditProfile.setOnClickListener(v -> {
+            startActivity(new Intent(getActivity(), EditProfileActivity.class));
+        });
+
+        btnLogout.setOnClickListener(v -> handleLogout());
+
+        return view;
+    }
+
+    private void refreshProfileData() {
         SharedPreferences prefs = requireActivity().getSharedPreferences(
                 LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
 
-        String email = prefs.getString(LoginActivity.KEY_EMAIL, "No Email");
+        // Retrieve data using the same keys used in EditProfileActivity
+        String name = prefs.getString(LoginActivity.KEY_NAME, "User");
         String role = prefs.getString(LoginActivity.KEY_ROLE, "student");
+        String phone = prefs.getString("user_phone", "No Phone");
+        String bio = prefs.getString("user_bio", "No bio added yet.");
 
-        tvName.setText(email);
+        tvName.setText(name);
         tvRole.setText("Role: " + role);
+        tvPhone.setText("Phone: " + phone);
+        tvBio.setText(bio);
 
-        String resume = prefs.getString("resume_path", null);
+        // Student-specific UI
         if ("student".equals(role)) {
+            String resume = prefs.getString("resume_path", null);
             tvResumeStatus.setText(resume == null ? "Resume: Not uploaded" : "Resume: Uploaded");
             tvResumeStatus.setVisibility(View.VISIBLE);
         } else {
             tvResumeStatus.setVisibility(View.GONE);
         }
-
-        // ✅ RecyclerView setup
-        rvExperience.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new ExperiencePostAdapter(new ArrayList<>());
-        rvExperience.setAdapter(adapter);
-
-        // ✅ Load Experience from Supabase
-        loadExperiencePostsFromSupabase();
-
-        // ✅ Logout
-        btnLogout.setOnClickListener(v -> {
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.clear();
-            editor.apply();
-
-            Intent intent = new Intent(getActivity(), LoginActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            requireActivity().finish();
-        });
-
-        return view;
     }
 
-    // ✅ ✅ ✅ LOAD EXPERIENCE POSTS FROM SUPABASE
-    private void loadExperiencePostsFromSupabase() {
+    @Override
+    public void onResume() {
+        super.onResume();
+        // This ensures the page updates immediately after you finish editing
+        refreshProfileData();
+    }
 
+    private void handleLogout() {
         SharedPreferences prefs = requireActivity().getSharedPreferences(
                 LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().clear().apply();
+        Intent intent = new Intent(getActivity(), LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        requireActivity().finish();
+    }
 
+    private void loadExperiencePostsFromSupabase() {
+        SharedPreferences prefs = requireActivity().getSharedPreferences(
+                LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
         String userId = prefs.getString(LoginActivity.KEY_USER_ID, null);
+        if (userId == null) return;
 
-        if (userId == null) {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/experience_posts?user_id=eq." + userId + "&select=*";
 
-        // Query 'experience_posts' table
-        String url = SupabaseConfig.SUPABASE_URL +
-                "/rest/v1/experience_posts?user_id=eq." + userId + "&select=*";
-
-        JsonArrayRequest request = new JsonArrayRequest(
-                Request.Method.GET,
-                url,
-                null,
+        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
                         ArrayList<ExperiencePostItem> list = new ArrayList<>();
-
                         for (int i = 0; i < response.length(); i++) {
                             JSONObject obj = response.getJSONObject(i);
-
-                            String id = obj.getString("id"); // ✅ CHANGED TO STRING (UUID)
-                            String uid = obj.getString("user_id");
-                            String title = obj.getString("title");
-                            
-                            // Read 'description' as per schema update in PostFragment
-                            String desc = obj.optString("description", obj.optString("content", ""));
-                            
-                            String mediaUrl = obj.isNull("media_url") ? "" : obj.getString("media_url");
-                            String mediaType = obj.isNull("media_type") ? "" : obj.getString("media_type");
-                            String createdAt = obj.getString("created_at");
-
                             list.add(new ExperiencePostItem(
-                                    id, uid, title, desc, mediaUrl, mediaType, createdAt
+                                    obj.getString("id"), obj.getString("user_id"),
+                                    obj.getString("title"), obj.optString("description", ""),
+                                    obj.optString("media_url", ""), obj.optString("media_type", ""),
+                                    obj.getString("created_at")
                             ));
                         }
-
                         adapter.updateData(list);
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Toast.makeText(getContext(), "Parse error", Toast.LENGTH_SHORT).show();
-                    }
+                    } catch (JSONException e) { e.printStackTrace(); }
                 },
-                error -> {
-                    error.printStackTrace();
-                    Toast.makeText(getContext(), "Failed to load experience posts", Toast.LENGTH_SHORT).show();
-                }
+                error -> Toast.makeText(getContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
         ) {
             @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
-                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
-                return headers;
-            }
+            public Map<String, String> getHeaders() { return ApiClient.getHeaders(); }
         };
-
         ApiClient.getRequestQueue(requireContext()).add(request);
     }
 }
