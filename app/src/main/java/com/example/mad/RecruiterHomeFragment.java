@@ -48,12 +48,18 @@ public class RecruiterHomeFragment extends Fragment {
     }
 
     private void fetchJobsFromSupabase() {
-        // 1. Construct the URL
-        // We want to select ALL columns (*) where recruiter_id equals 123
-        // Note: Change "jobs" if your table name is different (e.g., "job_posts")
-        String url = ApiClient.BASE_URL + "jobs?select=*&recruiter_id=eq.123";
+        // 1. Get the current User ID from local storage (Saved by Ivan during Login)
+        android.content.SharedPreferences prefs = requireActivity()
+                .getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE);
 
-        // 2. Create the Request
+        // "user_id" is the key Ivan must use. "user_001" is a default backup for testing.
+        String currentUserId = prefs.getString("user_id", "user_001");
+
+        // 2. Construct the URL using the REAL ID
+        // Note: ensure "jobs" matches your table name exactly
+        String url = ApiClient.BASE_URL + "jobs?select=*&recruiter_id=eq." + currentUserId;
+
+        // 3. Create the Request
         JsonArrayRequest request = new JsonArrayRequest(
                 Request.Method.GET,
                 url,
@@ -63,23 +69,23 @@ public class RecruiterHomeFragment extends Fragment {
                     public void onResponse(JSONArray response) {
                         jobList.clear();
                         try {
-                            // 3. Parse the Data (Manually read the JSON)
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject jobObject = response.getJSONObject(i);
 
-                                // Get the text from the curly braces
-                                // Make sure these match your Supabase column names exactly!
-                                String id = String.valueOf(jobObject.getInt("id")); // or getString("id")
+                                // Make sure these match your Supabase column names!
+                                String id = String.valueOf(jobObject.getInt("id"));
                                 String title = jobObject.getString("title");
                                 String description = jobObject.getString("description");
                                 String recruiterId = jobObject.getString("recruiter_id");
 
-                                // Add to our list
                                 jobList.add(new JobModel(id, title, description, recruiterId));
                             }
-
-                            // 4. Update the Screen
                             adapter.notifyDataSetChanged();
+
+                            // Optional: Show a message if list is empty
+                            if (jobList.isEmpty()) {
+                                Toast.makeText(getContext(), "No jobs found.", Toast.LENGTH_SHORT).show();
+                            }
 
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -90,19 +96,20 @@ public class RecruiterHomeFragment extends Fragment {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(getContext(), "Network Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
                         Log.e("Volley", error.toString());
                     }
                 }
         ) {
-            // 5. Attach the Headers (API Key) from your teammate's file
             @Override
             public Map<String, String> getHeaders() {
                 return ApiClient.getHeaders();
             }
         };
 
-        // 6. Add the request to the queue (Send it!)
         ApiClient.getRequestQueue(getContext()).add(request);
     }
+
+
+
 }
