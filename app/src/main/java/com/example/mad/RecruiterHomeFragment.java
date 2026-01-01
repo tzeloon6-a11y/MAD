@@ -50,10 +50,11 @@ public class RecruiterHomeFragment extends Fragment {
     private void fetchJobsFromSupabase() {
         // 1. Get the current User ID from local storage
         android.content.SharedPreferences prefs = requireActivity()
-                .getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE);
+                .getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
 
         //  "user_001" is a default backup for testing.
         String currentUserId = prefs.getString("user_id", "user_001");
+
 
         // 2. Construct the URL using the REAL ID
         // Note: ensure "jobs" matches your table name exactly
@@ -73,7 +74,7 @@ public class RecruiterHomeFragment extends Fragment {
                                 JSONObject jobObject = response.getJSONObject(i);
 
                                 // Make sure these match your Supabase column names!
-                                String id = String.valueOf(jobObject.getInt("id"));
+                                String id = jobObject.getString("id");
                                 String title = jobObject.getString("title");
                                 String description = jobObject.getString("description");
                                 String recruiterId = jobObject.getString("recruiter_id");
