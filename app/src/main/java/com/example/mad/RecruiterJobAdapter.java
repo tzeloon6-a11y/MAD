@@ -37,8 +37,8 @@ public class RecruiterJobAdapter extends RecyclerView.Adapter<RecruiterJobAdapte
         TextView tvTitle, tvDesc;
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTitle = itemView.findViewById(R.id.tvJobTitle);
-            tvDesc = itemView.findViewById(R.id.tvJobDesc);
+            tvTitle = itemView.findViewById(R.id.tv_job_title);
+            tvDesc = itemView.findViewById(R.id.tv_job_description);
         }
     }
 }
