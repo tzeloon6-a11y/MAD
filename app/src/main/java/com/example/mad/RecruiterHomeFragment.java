@@ -48,11 +48,11 @@ public class RecruiterHomeFragment extends Fragment {
     }
 
     private void fetchJobsFromSupabase() {
-        // 1. Get the current User ID from local storage (Saved by Ivan during Login)
+        // 1. Get the current User ID from local storage
         android.content.SharedPreferences prefs = requireActivity()
                 .getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE);
 
-        // "user_id" is the key Ivan must use. "user_001" is a default backup for testing.
+        //  "user_001" is a default backup for testing.
         String currentUserId = prefs.getString("user_id", "user_001");
 
         // 2. Construct the URL using the REAL ID
