@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:orientation="vertical"
+    android:paddingTop="16dp"
+    android:paddingBottom="24dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp">
+
+    <!-- Card with increased elevation and softer corners -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/job_card"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="16dp"
+        app:cardPreventCornerOverlap="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Top content area with blue background -->
+            <LinearLayout
+                android:id="@+id/top_content_area"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorPrimary"
+                android:orientation="vertical"
+                android:padding="24dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <!-- Job Title - Main focus -->
+                <TextView
+                    android:id="@+id/job_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceHeadline5"
+                    android:textColor="?attr/colorOnPrimary"
+                    android:textStyle="bold"
+                    android:fontFamily="@font/montserrat_bold"
+                    tools:text="Software Engineer Intern"
+                    />
+
+                <!-- Company Name -->
+                <TextView
+                    android:id="@+id/company_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:alpha="0.8"
+                    android:textAppearance="?attr/textAppearanceSubtitle1"
+                    android:textColor="?attr/colorOnPrimary"
+                    android:fontFamily="@font/montserrat_bold"
+                    tools:text="CampusLink Inc." />
+            </LinearLayout>
+
+            <!-- Save for Later button at top-right -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/save_button"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="12dp"
+                app:icon="@drawable/ic_save_for_later"
+                app:iconTint="?attr/colorOnPrimary"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Bottom content area -->
+            <LinearLayout
+                android:id="@+id/bottom_content_area"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                android:padding="24dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/top_content_area">
+
+                <!-- Wage Pill (yellow accent) -->
+                <TextView
+                    android:id="@+id/wage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_wage_pill"
+                    android:drawableStart="@drawable/ic_wage"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="8dp"
+                    android:textAppearance="?attr/textAppearanceBody1"
+                    android:textColor="?attr/colorOnSecondary"
+                    android:textStyle="bold"
+                    tools:text="$25/hour" />
+
+                <!-- Location -->
+                <TextView
+                    android:id="@+id/location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:drawableStart="@drawable/ic_location"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:textColor="?android:attr/textColorSecondary"
+                    tools:text="Main Campus" />
+
+                <!-- Divider -->
+                <com.google.android.material.divider.MaterialDivider
+                    android:id="@+id/divider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp" />
+
+                <!-- Job Description (reduced emphasis) -->
+                <TextView
+                    android:id="@+id/job_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:lineSpacingExtra="4dp"
+                    android:maxLines="3"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:textColor="?android:attr/textColorSecondary"
+                    tools:text="Seeking a passionate intern to work on cutting-edge projects. This is a great opportunity to learn and grow within our dynamic team." />
+
+                <!-- Action Buttons (closer to content) -->
+                <LinearLayout
+                    android:id="@+id/button_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="horizontal">
+
+                    <!-- "Not Now" Button - Muted Style -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/not_now_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/montserrat_medium"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:text="Not Now"
+                        android:textColor="?attr/colorSecondary"
+                        app:backgroundTint="?attr/colorPrimary"
+                        app:cornerRadius="16dp"
+                        app:icon="@drawable/ic_close"
+                        app:iconTint="?attr/colorSecondary" />
+
+                    <!-- "Interested" Button - Primary Style -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/interested_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/montserrat_medium"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:text="Interested"
+                        app:cornerRadius="16dp"
+                        app:icon="@drawable/ic_like"
+                        app:backgroundTint="?attr/colorSecondary"
+                        android:textColor="?attr/colorPrimary"
+                        app:iconTint="?attr/colorPrimary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Visual Feedback Overlays (No changes needed here) -->
+            <FrameLayout
+                android:id="@+id/overlay_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/overlay_interested"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginTop="32dp"
+                    android:background="@drawable/bg_overlay_interested"
+                    android:padding="8dp"
+                    android:rotation="-20"
+                    android:text="INTERESTED"
+                    android:textColor="@color/campus_blue"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/overlay_not_now"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_marginEnd="24dp"
+                    android:layout_marginTop="32dp"
+                    android:background="@drawable/bg_overlay_not_now"
+                    android:padding="8dp"
+                    android:rotation="20"
+                    android:text="NOT NOW"
+                    android:textColor="#C62828"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/overlay_saved"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="60dp"
+                    android:background="@drawable/bg_overlay_saved"
+                    android:padding="8dp"
+                    android:rotation="0"
+                    android:text="SAVED"
+                    android:textColor="?attr/colorSecondary"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+            </FrameLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>
+
+
+
+
+
+
+

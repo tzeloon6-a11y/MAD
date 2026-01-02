@@ -15,4 +15,16 @@
     
     <!-- Pale Yellow with ~50% Opacity (Alpha 80) -->
     <color name="pale_yellow">#80FFFDE7</color>
+
+    <!-- Original Theme Colors -->
+    <color name="campus_blue">#1976D2</color>
+    <color name="campus_blue_dark">#004BA0</color>
+    <color name="campus_yellow">#FFC107</color> <!-- This is your original yellow -->
+
+    <!-- NEW Professional Theme Colors -->
+    <color name="navy_dark">#1A237E</color>
+    <!-- REVERTED: Point accent_yellow back to your original campus_yellow -->
+    <color name="accent_yellow">@color/campus_yellow</color>
+    <!-- REMOVED: muted_blue_grey is no longer needed -->
+    <color name="light_grey">#F0F0F0</color>
 </resources>
