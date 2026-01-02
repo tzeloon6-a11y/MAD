@@ -46,4 +46,5 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     // Volley - Added for Database Connection
     implementation("com.android.volley:volley:1.2.1")
+    implementation("com.github.yuyakaido:CardStackView:2.3.4")
 }

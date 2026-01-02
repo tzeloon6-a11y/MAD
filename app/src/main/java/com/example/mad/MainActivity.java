@@ -3,7 +3,7 @@ package com.example.mad;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
-import android.content.SharedPreferences; // Import this!
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -11,7 +11,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNavigationView;
-    private String userRole; // Variable to store the role
+    private String userRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,17 +20,17 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
-        // 1. GET THE ROLE FROM STORAGE (Saved by Ivan's Login)
+        // 1. GET THE ROLE FROM STORAGE
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        // Default to "student" if nothing is found
         userRole = prefs.getString("role", "student");
 
-        // 2. SET THE DEFAULT FRAGMENT (When app opens)
+        // 2. SET THE DEFAULT FRAGMENT
         if (savedInstanceState == null) {
             if (userRole.equalsIgnoreCase("recruiter")) {
-                loadFragment(new RecruiterHomeFragment()); // Show YOUR Fragment
+                loadFragment(new RecruiterHomeFragment());
             } else {
-                loadFragment(new HomeFragment()); // Show Student Fragment
+                // CHANGED: Use the new StudentHomeFragment we created
+                loadFragment(new StudentHomeFragment());
             }
         }
 
@@ -44,7 +44,8 @@ public class MainActivity extends AppCompatActivity {
                 if (userRole.equalsIgnoreCase("recruiter")) {
                     selectedFragment = new RecruiterHomeFragment();
                 } else {
-                    selectedFragment = new HomeFragment();
+                    // CHANGED: Use the new StudentHomeFragment we created
+                    selectedFragment = new StudentHomeFragment();
                 }
             } else if (id == R.id.nav_chat) {
                 selectedFragment = new ChatFragment();
