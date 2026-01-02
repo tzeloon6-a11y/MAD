@@ -2,7 +2,7 @@ package com.example.mad;
 
 public class JobPostItem {
 
-    private int id;
+    private String id;
     private String userId;   // ✅ UUID STRING FIXED
     private String title;
     private String description;
@@ -11,7 +11,7 @@ public class JobPostItem {
     private String recruiterEmail;
     private String createdAt;
 
-    public JobPostItem(int id, String userId, String title, String description,
+    public JobPostItem(String id, String userId, String title, String description,
                        String mediaUrl, String recruiterName,
                        String recruiterEmail, String createdAt) {
 
@@ -25,7 +25,7 @@ public class JobPostItem {
         this.createdAt = createdAt;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 

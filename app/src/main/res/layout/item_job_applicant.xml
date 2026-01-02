@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,42 +15,34 @@
         android:padding="16dp">
 
         <TextView
-            android:id="@+id/tv_job_title"
+            android:id="@+id/tvApplicantName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Job Title"
+            android:text="Student Name"
+            android:textColor="@android:color/black"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black" />
+            android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tv_recruiter_name"
+            android:id="@+id/tvApplicantEmail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Recruiter Name"
-            android:textSize="14sp"
-            android:textColor="#757575" />
-
-        <TextView
-            android:id="@+id/tv_job_description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Job Description goes here..."
-            android:maxLines="3"
-            android:ellipsize="end"
+            android:text="student@email.com"
+            android:textColor="#757575"
             android:textSize="14sp" />
 
         <TextView
-            android:id="@+id/tv_job_created_at"
+            android:id="@+id/tvApplicationStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:layout_gravity="end"
-            android:text="2023-10-01"
+            android:background="#E8F5E9"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="Status: Applied"
+            android:textColor="#2E7D32"
             android:textSize="12sp"
-            android:textColor="#9E9E9E" />
-
+            android:textStyle="bold" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

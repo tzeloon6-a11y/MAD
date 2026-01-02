@@ -69,8 +69,7 @@ public class HomeFragment extends Fragment {
                         for (int i = 0; i < response.length(); i++) {
                             JSONObject obj = response.getJSONObject(i);
 
-                            int id = obj.optInt("id", 0); // optional if exists
-                            String userId = obj.optString("user_id", ""); // ✅ UUID STRING
+                            String id = String.valueOf(obj.optString("id"));                            String userId = obj.optString("user_id", ""); // ✅ UUID STRING
                             String title = obj.optString("title", "");
                             // Try "description" first (as saved by PostFragment), fallback to "content"
                             String desc = obj.optString("description", obj.optString("content", ""));
