@@ -56,9 +56,8 @@ public class RecruiterHomeFragment extends Fragment {
         String currentUserId = prefs.getString("user_id", "user_001");
 
 
-        // 2. Construct the URL using the REAL ID
-        // Note: ensure "jobs" matches your table name exactly
-        String url = ApiClient.BASE_URL + "jobs?select=*&recruiter_id=eq." + currentUserId;
+        // 2. ✅ FIXED: Changed table name from "jobs" to "job_posts"
+        String url = ApiClient.BASE_URL + "job_posts?select=*&recruiter_id=eq." + currentUserId;
 
         // 3. Create the Request
         JsonArrayRequest request = new JsonArrayRequest(
@@ -68,6 +67,7 @@ public class RecruiterHomeFragment extends Fragment {
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
+                        if (!isAdded()) return; // ✅ Check if fragment is still active
                         jobList.clear();
                         try {
                             for (int i = 0; i < response.length(); i++) {
@@ -83,21 +83,23 @@ public class RecruiterHomeFragment extends Fragment {
                             }
                             adapter.notifyDataSetChanged();
 
-                            // Optional: Show a message if list is empty
                             if (jobList.isEmpty()) {
                                 Toast.makeText(getContext(), "No jobs found.", Toast.LENGTH_SHORT).show();
                             }
 
                         } catch (JSONException e) {
                             e.printStackTrace();
-                            Toast.makeText(getContext(), "Parsing Error", Toast.LENGTH_SHORT).show();
+                            if (isAdded()) Toast.makeText(getContext(), "Parsing Error", Toast.LENGTH_SHORT).show();
                         }
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
+                        // ✅ FIXED: Check if fragment is still active before showing Toast
+                        if (isAdded()) {
+                            Toast.makeText(getContext(), "Failed to load jobs", Toast.LENGTH_SHORT).show();
+                        }
                         Log.e("Volley", error.toString());
                     }
                 }
@@ -108,7 +110,7 @@ public class RecruiterHomeFragment extends Fragment {
             }
         };
 
-        ApiClient.getRequestQueue(getContext()).add(request);
+        ApiClient.getRequestQueue(requireContext()).add(request);
     }
 
 
