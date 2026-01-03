@@ -15,4 +15,6 @@
     
     <!-- Pale Yellow with ~50% Opacity (Alpha 80) -->
     <color name="pale_yellow">#80FFFDE7</color>
+
+    <color name="campus_blue">#3F51B5</color>
 </resources>
