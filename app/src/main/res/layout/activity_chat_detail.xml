@@ -6,7 +6,6 @@
     android:background="@color/classic_background"
     android:fitsSystemWindows="true">
 
-    <!-- Toolbar/Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -14,6 +13,19 @@
         android:background="@color/app_blue"
         android:padding="16dp"
         android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="16dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:contentDescription="Back"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="@color/white"
+            xmlns:app="http://schemas.android.com/apk/res-auto"/>
 
         <TextView
             android:id="@+id/tv_chat_header"
@@ -27,7 +39,6 @@
 
     </LinearLayout>
 
-    <!-- RecyclerView for Messages -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_messages"
         android:layout_width="match_parent"
@@ -36,7 +47,6 @@
         android:padding="8dp"
         android:clipToPadding="false" />
 
-    <!-- Input Area at Bottom -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -77,4 +87,3 @@
     </LinearLayout>
 
 </LinearLayout>
-

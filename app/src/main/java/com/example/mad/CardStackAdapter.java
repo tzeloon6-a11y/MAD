@@ -1,5 +1,7 @@
 package com.example.mad;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import java.util.List;
+
 public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.ViewHolder> {
     private final List<Job> items;
     private OnButtonClickListener buttonClickListener;
@@ -34,7 +37,6 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.View
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        // "R" might be red here until we do Step 4 (XML files). Ignore for now.
         View view = inflater.inflate(R.layout.item_job_card, parent, false);
         return new ViewHolder(view);
     }
@@ -42,6 +44,12 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.View
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         holder.setData(items.get(position));
+
+        // 1. RESET STATE (Default: Hollow White Outline)
+        // Reset to the outline icon every time the card rebinds
+        holder.saveButton.setIconResource(R.drawable.ic_save_for_later);
+        // Force it to be WHITE so it is visible on the blue background
+        holder.saveButton.setIconTint(ColorStateList.valueOf(Color.WHITE));
 
         holder.notNowButton.setOnClickListener(v -> {
             if (buttonClickListener != null) {
@@ -55,7 +63,21 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.View
             }
         });
 
+        // 2. CLICK LISTENER (Toggle to Solid Blue)
         holder.saveButton.setOnClickListener(v -> {
+            // A. Change image to the "Filled White" vector (the shape is all we need)
+            holder.saveButton.setIconResource(R.drawable.ic_bookmark_filled_white);
+
+            // B. APPLY BLUE TINT 🎨
+            // We get the "colorPrimary" (the blue background color) from the current theme.
+            android.util.TypedValue typedValue = new android.util.TypedValue();
+            holder.itemView.getContext().getTheme().resolveAttribute(androidx.appcompat.R.attr.colorPrimary, typedValue, true);
+            int primaryColor = typedValue.data;
+
+            // Set the tint to that blue color.
+            holder.saveButton.setIconTint(ColorStateList.valueOf(primaryColor));
+
+            // C. Trigger the database save
             if (buttonClickListener != null) {
                 buttonClickListener.onSaveClicked();
             }

@@ -72,7 +72,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void checkIfAlreadyLoggedIn() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
+        String currentUserId = prefs.getString(LoginActivity.KEY_USER_ID, null);
         // ✅ CHANGED: Read as String
         String savedUserId = prefs.getString(KEY_USER_ID, null);
         String savedEmail = prefs.getString(KEY_EMAIL, null);

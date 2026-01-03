@@ -330,7 +330,7 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         SharedPreferences prefs = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         // Steve's LoginActivity uses "userId" key usually, but check your LoginActivity to be sure.
         // Assuming "userId" and "name" based on common patterns
-        String currentUserId = prefs.getString("userId", null);
+        String currentUserId = prefs.getString("user_id", null);
         String studentName = prefs.getString("name", "Student");
 
         // Safety Check
@@ -391,6 +391,67 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         };
 
         // Add to queue
+        ApiClient.getRequestQueue(requireContext()).add(request);
+    }
+
+
+    private void saveJobToSupabase(Job job) {
+        SharedPreferences prefs = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String currentUserId = prefs.getString("user_id", null);
+
+        if (currentUserId == null) {
+            android.util.Log.e("Supabase", "Save failed: User ID is null");
+            return;
+        }
+
+        String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/saved_jobs";
+
+        StringRequest request = new StringRequest(Request.Method.POST, url,
+                response -> {
+                    android.util.Log.d("Supabase", "Job saved successfully!");
+                    Toast.makeText(requireContext(), "Job Saved!", Toast.LENGTH_SHORT).show();
+                },
+                error -> {
+                    // NEW: Print the actual error from the server
+                    String responseBody = "";
+                    if (error.networkResponse != null && error.networkResponse.data != null) {
+                        try {
+                            responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    android.util.Log.e("Supabase", "Failed to save job. Error: " + responseBody);
+                    android.util.Log.e("Supabase", "Status Code: " + (error.networkResponse != null ? error.networkResponse.statusCode : "N/A"));
+                    Toast.makeText(requireContext(), "Error saving: Check Logcat", Toast.LENGTH_SHORT).show();
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                headers.put("Content-Type", "application/json");
+                headers.put("Prefer", "return=minimal");
+                return headers;
+            }
+
+            @Override
+            public byte[] getBody() {
+                try {
+                    JSONObject json = new JSONObject();
+                    json.put("user_id", currentUserId);
+                    json.put("job_id", job.getJobId());
+                    json.put("job_title", job.getTitle());
+                    json.put("company_name", job.getCompanyName());
+                    json.put("recruiter_id", job.getRecruiterId());
+                    return json.toString().getBytes(StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+        };
+
         ApiClient.getRequestQueue(requireContext()).add(request);
     }
 }
