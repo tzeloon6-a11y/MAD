@@ -87,10 +87,6 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
      */
     public static void startChat(Context context, ApplicationModel application, String jobTitle, String recruiterId) {
         // Step 1: Check if chat already exists for this applicationId
-        android.util.Log.d("ChatDebug", "▶️ startChat called for applicationId=" + application.getApplicationId());
-        android.util.Log.d("ChatDebug", "   studentId=" + application.getStudentId()
-                + ", recruiterId=" + recruiterId
-                + ", jobId=" + application.getJobId());
         checkExistingChat(context, application, jobTitle, recruiterId);
     }
 
@@ -101,40 +97,32 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
                 + "&select=chat_id"
                 + "&limit=1";
 
-        android.util.Log.d("ChatDebug", "🔎 Checking existing chat: " + checkUrl);
-
         JsonArrayRequest checkRequest = new JsonArrayRequest(
                 Request.Method.GET,
                 checkUrl,
                 null,
                 response -> {
                     try {
-                        android.util.Log.d("ChatDebug", "✅ checkExistingChat response: " + response);
                         if (response.length() > 0) {
                             // Chat already exists - navigate to it
                             JSONObject chat = response.getJSONObject(0);
                             String existingChatId = chat.optString("chat_id", "");
                             if (existingChatId != null && !existingChatId.isEmpty()) {
-                                android.util.Log.d("ChatDebug", "➡️ Existing chat found. chatId=" + existingChatId);
                                 navigateToChat(context, existingChatId);
                             } else {
-                                android.util.Log.w("ChatDebug", "⚠️ Existing chat row has empty chat_id, creating new chat");
                                 createNewChat(context, application, jobTitle, recruiterId);
                             }
                         } else {
                             // No chat exists - create new one
-                            android.util.Log.d("ChatDebug", "ℹ️ No existing chat for this application, creating new chat");
                             createNewChat(context, application, jobTitle, recruiterId);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
-                        android.util.Log.e("ChatDebug", "❌ Exception while checking existing chat", e);
                         Toast.makeText(context, "Error checking chat", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
                     // On error, try to create new chat
-                    android.util.Log.e("ChatDebug", "❌ Network error while checking existing chat", error);
                     createNewChat(context, application, jobTitle, recruiterId);
                 }
         ) {
@@ -164,34 +152,16 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
                 chatUrl,
                 response -> {
                     // Chat created - extract chatId and proceed
-                    android.util.Log.d("ChatDebug", "✅ Chat create response: " + response);
                     String newChatId = extractChatIdFromResponse(response);
                     if (newChatId == null || newChatId.isEmpty()) {
-                        android.util.Log.w("ChatDebug", "⚠️ Could not extract chatId from response, querying for latest chat instead");
                         // If we can't extract, query for it
                         queryChatIdAndContinue(context, application, recruiterId, jobTitle, timestamp);
                     } else {
-                        android.util.Log.d("ChatDebug", "✅ Chat created! ID: " + newChatId);
                         // Transfer message and update status
                         transferMessageAndUpdateStatus(context, application, newChatId, timestamp);
                     }
                 },
                 error -> {
-                    // Detailed error logging similar to your Retrofit example
-                    String errorBody = null;
-                    int statusCode = -1;
-                    if (error.networkResponse != null) {
-                        statusCode = error.networkResponse.statusCode;
-                        if (error.networkResponse.data != null) {
-                            try {
-                                errorBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                    android.util.Log.e("ChatDebug", "❌ Failed to create chat. HTTP code: " + statusCode);
-                    android.util.Log.e("ChatDebug", "❌ Error Body: " + (errorBody != null ? errorBody : "null"));
                     Toast.makeText(context, "Failed to create chat", Toast.LENGTH_SHORT).show();
                 }
         ) {

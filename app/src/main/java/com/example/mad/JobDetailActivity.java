@@ -85,6 +85,9 @@ public class JobDetailActivity extends AppCompatActivity {
             btnApply.setVisibility(View.VISIBLE);
             tvApplicantsHeader.setVisibility(View.GONE);
             recyclerApplicants.setVisibility(View.GONE);
+            // Initialize button to "Interested" state (not "Applied")
+            btnApply.setText("Interested");
+            btnApply.setEnabled(true);
             btnApply.setOnClickListener(v -> onApplyButtonClicked());
             checkIfAlreadyApplied();
         } else if ("recruiter".equalsIgnoreCase(userRole)) {
@@ -111,22 +114,8 @@ public class JobDetailActivity extends AppCompatActivity {
     }
 
     private void onApplyButtonClicked() {
-        // Prevent multiple clicks
-        if (hasApplied) {
-            return;
-        }
-        
-        // Disable button immediately to prevent multiple clicks
-        btnApply.setEnabled(false);
-        btnApply.setText("Checking...");
-        
         // Critical: Check for duplicate application BEFORE showing dialog
         checkForDuplicateApplication(() -> {
-            // Re-enable button if check passes (user can proceed)
-            runOnUiThread(() -> {
-                btnApply.setEnabled(true);
-                btnApply.setText("Interested");
-            });
             // This callback runs if no duplicate exists
             showPitchDialog();
         });
@@ -134,24 +123,16 @@ public class JobDetailActivity extends AppCompatActivity {
 
     private void checkForDuplicateApplication(Runnable onNoDuplicate) {
         if (currentJobId == null || currentUserId == null) {
-            android.util.Log.e("JobDetailActivity", "❌ Missing data - currentJobId: " + currentJobId + ", currentUserId: " + currentUserId);
             Toast.makeText(this, "Invalid job or user data", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        android.util.Log.d("JobDetailActivity", "🔍 Starting duplicate check...");
-        android.util.Log.d("JobDetailActivity", "📝 currentUserId: " + currentUserId);
-        android.util.Log.d("JobDetailActivity", "📝 currentJobId: " + currentJobId);
 
         // Use snake_case column names: student_id and job_id
         checkIfApplied(currentUserId, currentJobId, (hasApplied, error) -> {
             if (error != null) {
                 // Log error but allow user to proceed
-                android.util.Log.e("JobDetailActivity", "❌ Error checking application: " + error);
-                android.util.Log.e("JobDetailActivity", "⚠️ Allowing user to proceed despite error");
-                runOnUiThread(() -> {
-                    Toast.makeText(JobDetailActivity.this, "Could not verify application status. You can still apply.", Toast.LENGTH_SHORT).show();
-                });
+                android.util.Log.e("JobDetailActivity", "Error checking application: " + error);
+                Toast.makeText(this, "Could not verify application status. You can still apply.", Toast.LENGTH_SHORT).show();
                 onNoDuplicate.run();
                 return;
             }
@@ -215,40 +196,26 @@ public class JobDetailActivity extends AppCompatActivity {
         // Save to Applications collection
         String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/applications";
 
-        // Show loading state
-        runOnUiThread(() -> {
-            btnApply.setEnabled(false);
-            btnApply.setText("Submitting...");
-        });
-        
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 url,
                 response -> {
-                    // Success - update UI on main thread
-                    runOnUiThread(() -> {
-                        Toast.makeText(JobDetailActivity.this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
-                        btnApply.setText("Applied");
-                        btnApply.setEnabled(false);
-                        JobDetailActivity.this.hasApplied = true;
-                    });
+                    // Success - update UI
+                    Toast.makeText(JobDetailActivity.this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
+                    btnApply.setText("Applied");
+                    btnApply.setEnabled(false);
+                    JobDetailActivity.this.hasApplied = true;
                 },
                 error -> {
-                    // Error - re-enable button and show error
                     String responseBody = null;
                     if (error.networkResponse != null && error.networkResponse.data != null) {
                         try {
                             responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
-                            android.util.Log.e("JobDetailActivity", "Application submission error: " + responseBody);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
-                    runOnUiThread(() -> {
-                        Toast.makeText(JobDetailActivity.this, "Failed to submit application. Please try again.", Toast.LENGTH_SHORT).show();
-                        btnApply.setEnabled(true);
-                        btnApply.setText("Interested");
-                    });
+                    Toast.makeText(this, "Failed to submit application", Toast.LENGTH_SHORT).show();
                 }
         ) {
             @Override
@@ -329,23 +296,19 @@ public class JobDetailActivity extends AppCompatActivity {
             
             // Query Applications collection using snake_case column names
             // CRITICAL: Use snake_case - student_id and job_id
-            // Supabase PostgREST format: multiple filters with & separator
-            // Format: /rest/v1/table?column1=eq.value1&column2=eq.value2&select=column&limit=1
+            // Try alternative format: using AND operator explicitly
             String checkUrl = SupabaseConfig.SUPABASE_URL
-                    + "/rest/v1/applications"
-                    + "?student_id=eq." + encodedUserId
+                    + "/rest/v1/applications?student_id=eq." + encodedUserId
                     + "&job_id=eq." + encodedJobId
                     + "&select=application_id"
                     + "&limit=1";
 
             android.util.Log.d("JobDetailActivity", "🔍 Checking application status...");
-            android.util.Log.d("JobDetailActivity", "📋 Full Request URL: " + checkUrl);
-            android.util.Log.d("JobDetailActivity", "🌐 Supabase URL: " + SupabaseConfig.SUPABASE_URL);
-            android.util.Log.d("JobDetailActivity", "📊 Table: applications");
-            android.util.Log.d("JobDetailActivity", "👤 student_id (raw): " + studentId);
-            android.util.Log.d("JobDetailActivity", "💼 job_id (raw): " + jobId);
-            android.util.Log.d("JobDetailActivity", "🔐 student_id (encoded): " + encodedUserId);
-            android.util.Log.d("JobDetailActivity", "🔐 job_id (encoded): " + encodedJobId);
+            android.util.Log.d("JobDetailActivity", "📋 Request URL: " + checkUrl);
+            android.util.Log.d("JobDetailActivity", "👤 student_id: " + studentId);
+            android.util.Log.d("JobDetailActivity", "💼 job_id: " + jobId);
+            android.util.Log.d("JobDetailActivity", "🔐 Encoded student_id: " + encodedUserId);
+            android.util.Log.d("JobDetailActivity", "🔐 Encoded job_id: " + encodedJobId);
 
             JsonArrayRequest checkRequest = new JsonArrayRequest(
                     Request.Method.GET,
@@ -358,12 +321,41 @@ public class JobDetailActivity extends AppCompatActivity {
                             android.util.Log.d("JobDetailActivity", "Response length: " + (response != null ? response.length() : 0));
                             
                             // CRITICAL: Handle response carefully
-                            // If data is not null and data.size() > 0, it means Already Applied
+                            // If data is not null and data.size() > 0, verify it's actually the user's application
                             if (response != null && response.length() > 0) {
-                                // Application exists - user has already applied
-                                android.util.Log.d("JobDetailActivity", "✅ Application found - user already applied");
-                                android.util.Log.d("JobDetailActivity", "Response content: " + response.toString());
-                                callback.onResult(true, null);
+                                // Verify the response contains an application for THIS user and THIS job
+                                boolean foundMatch = false;
+                                for (int i = 0; i < response.length(); i++) {
+                                    try {
+                                        JSONObject app = response.getJSONObject(i);
+                                        String respStudentId = app.optString("student_id", "");
+                                        String respJobId = app.optString("job_id", "");
+                                        
+                                        android.util.Log.d("JobDetailActivity", "Checking application " + i + ": student_id=" + respStudentId + ", job_id=" + respJobId);
+                                        android.util.Log.d("JobDetailActivity", "Expected: student_id=" + studentId + ", job_id=" + jobId);
+                                        
+                                        // Verify both student_id and job_id match
+                                        if (studentId.equals(respStudentId) && jobId.equals(respJobId)) {
+                                            foundMatch = true;
+                                            android.util.Log.d("JobDetailActivity", "✅ Match found - user already applied");
+                                            break;
+                                        } else {
+                                            android.util.Log.w("JobDetailActivity", "⚠️ Application found but doesn't match user/job");
+                                        }
+                                    } catch (Exception e) {
+                                        android.util.Log.e("JobDetailActivity", "Error parsing application object", e);
+                                    }
+                                }
+                                
+                                if (foundMatch) {
+                                    // Application exists for this user and job - user has already applied
+                                    android.util.Log.d("JobDetailActivity", "✅ Application confirmed - user already applied");
+                                    callback.onResult(true, null);
+                                } else {
+                                    // Response has data but doesn't match - treat as not applied
+                                    android.util.Log.w("JobDetailActivity", "⚠️ Response has data but no matching application - user can apply");
+                                    callback.onResult(false, null);
+                                }
                             } else {
                                 // No application found - user can apply
                                 android.util.Log.d("JobDetailActivity", "❌ No application found - user can apply");
@@ -373,7 +365,7 @@ public class JobDetailActivity extends AppCompatActivity {
                             e.printStackTrace();
                             android.util.Log.e("JobDetailActivity", "❌ Error parsing response", e);
                             android.util.Log.e("JobDetailActivity", "Exception details: " + e.getMessage());
-                            // On parsing error, return error in callback
+                            // On parsing error, return false (not applied) to be safe
                             callback.onResult(false, "Error parsing response: " + e.getMessage());
                         }
                     },
@@ -426,14 +418,10 @@ public class JobDetailActivity extends AppCompatActivity {
                 headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
                 headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
                 headers.put("Content-Type", "application/json");
-                headers.put("Prefer", "return=representation");
-                // Log first 20 chars of API key for debugging (not full key for security)
-                android.util.Log.d("JobDetailActivity", "🔑 API Key (first 20 chars): " + (SupabaseConfig.SUPABASE_KEY != null ? SupabaseConfig.SUPABASE_KEY.substring(0, Math.min(20, SupabaseConfig.SUPABASE_KEY.length())) + "..." : "NULL"));
                 return headers;
             }
         };
 
-        android.util.Log.d("JobDetailActivity", "📤 Sending request to Supabase...");
         ApiClient.getRequestQueue(this).add(checkRequest);
         } catch (Exception e) {
             e.printStackTrace();
