@@ -170,12 +170,21 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         holder.tvInitialMessage.setText(message != null ? message : "No message provided");
         
         // Handle View Resume button
-        String resumeUrl = application.getStudentResumeUrl();
-        if (resumeUrl != null && !resumeUrl.isEmpty()) {
-            holder.btnViewResume.setVisibility(View.VISIBLE);
-            holder.btnViewResume.setOnClickListener(v -> viewResume(holder.itemView.getContext(), resumeUrl));
-        } else {
-            holder.btnViewResume.setVisibility(View.GONE);
+        if (holder.btnViewResume != null) {
+            String resumeUrl = application.getStudentResumeUrl();
+            // Check if resume URL exists and is valid
+            boolean hasResume = resumeUrl != null 
+                    && !resumeUrl.trim().isEmpty() 
+                    && !resumeUrl.equals("null")
+                    && !resumeUrl.equalsIgnoreCase("null");
+            
+            if (hasResume) {
+                holder.btnViewResume.setVisibility(View.VISIBLE);
+                holder.btnViewResume.setOnClickListener(v -> viewResume(holder.itemView.getContext(), resumeUrl));
+            } else {
+                holder.btnViewResume.setVisibility(View.GONE);
+                holder.btnViewResume.setOnClickListener(null);
+            }
         }
         
         // Check if chat exists for this application

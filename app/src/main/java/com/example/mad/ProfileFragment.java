@@ -3,6 +3,7 @@ package com.example.mad;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,6 +32,8 @@ public class ProfileFragment extends Fragment {
     private RecyclerView rvExperience;
     private ExperiencePostAdapter adapter;
     private MaterialButton btnLogout, btnEditProfile;
+    private String currentUserId;
+    private String resumeUrl;
 
     // Use static factory method instead of public constructor
     public static ProfileFragment newInstance() {
@@ -61,6 +64,11 @@ public class ProfileFragment extends Fragment {
         adapter = new ExperiencePostAdapter(new ArrayList<>());
         rvExperience.setAdapter(adapter);
 
+        // Get current user ID
+        SharedPreferences prefs = requireActivity().getSharedPreferences(
+                LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        currentUserId = prefs.getString(LoginActivity.KEY_USER_ID, null);
+
         // Set initial data
         refreshProfileData();
         loadExperiencePostsFromSupabase();
@@ -71,6 +79,15 @@ public class ProfileFragment extends Fragment {
         });
 
         btnLogout.setOnClickListener(v -> handleLogout());
+
+        // Make resume status clickable (will be enabled/disabled in updateResumeStatus)
+        tvResumeStatus.setOnClickListener(v -> {
+            if (resumeUrl != null && !resumeUrl.isEmpty()) {
+                viewResume(resumeUrl);
+            } else {
+                Toast.makeText(getContext(), "No resume uploaded yet", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         return view;
     }
@@ -90,13 +107,103 @@ public class ProfileFragment extends Fragment {
         tvPhone.setText("Phone: " + phone);
         tvBio.setText(bio);
 
-        // Student-specific UI
+        // Student-specific UI - fetch resume URL from database
         if ("student".equals(role)) {
-            String resume = prefs.getString("resume_path", null);
-            tvResumeStatus.setText(resume == null ? "Resume: Not uploaded" : "Resume: Uploaded");
+            // First check SharedPreferences (might be cached)
+            resumeUrl = prefs.getString("user_resume_url", null);
+            
+            // Also fetch from database to ensure we have the latest
+            if (currentUserId != null && !currentUserId.isEmpty()) {
+                fetchResumeUrlFromDatabase();
+            } else {
+                updateResumeStatus();
+            }
             tvResumeStatus.setVisibility(View.VISIBLE);
         } else {
             tvResumeStatus.setVisibility(View.GONE);
+        }
+    }
+    
+    private void fetchResumeUrlFromDatabase() {
+        try {
+            String encodedUserId = java.net.URLEncoder.encode(currentUserId, "UTF-8");
+            String url = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/users?select=resume_url&id=eq." + encodedUserId
+                    + "&limit=1";
+
+            JsonArrayRequest request = new JsonArrayRequest(
+                    Request.Method.GET,
+                    url,
+                    null,
+                    response -> {
+                        try {
+                            if (response.length() > 0) {
+                                JSONObject userObj = response.getJSONObject(0);
+                                resumeUrl = userObj.optString("resume_url", "");
+                                
+                                // Update SharedPreferences for future use
+                                if (resumeUrl != null && !resumeUrl.isEmpty()) {
+                                    SharedPreferences prefs = requireActivity().getSharedPreferences(
+                                            LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
+                                    prefs.edit().putString("user_resume_url", resumeUrl).apply();
+                                }
+                            }
+                            updateResumeStatus();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            updateResumeStatus();
+                        }
+                    },
+                    error -> {
+                        // On error, use cached value from SharedPreferences
+                        updateResumeStatus();
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    return ApiClient.getHeaders();
+                }
+            };
+
+            ApiClient.getRequestQueue(requireContext()).add(request);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            updateResumeStatus();
+        }
+    }
+    
+    private void updateResumeStatus() {
+        if (resumeUrl != null && !resumeUrl.isEmpty()) {
+            tvResumeStatus.setText("Resume: Uploaded (Tap to view)");
+            tvResumeStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark, null));
+            tvResumeStatus.setClickable(true);
+            tvResumeStatus.setFocusable(true);
+        } else {
+            tvResumeStatus.setText("Resume: Not uploaded");
+            tvResumeStatus.setTextColor(getResources().getColor(android.R.color.darker_gray, null));
+            tvResumeStatus.setClickable(false);
+            tvResumeStatus.setFocusable(false);
+        }
+    }
+    
+    private void viewResume(String resumeUrl) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(resumeUrl));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            
+            // Verify that there's an app to handle this intent
+            if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                Toast.makeText(getContext(), "No app available to view resume", Toast.LENGTH_SHORT).show();
+            }
+        } catch (android.content.ActivityNotFoundException e) {
+            Toast.makeText(getContext(), "No app available to view resume", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Error opening resume", Toast.LENGTH_SHORT).show();
         }
     }
 

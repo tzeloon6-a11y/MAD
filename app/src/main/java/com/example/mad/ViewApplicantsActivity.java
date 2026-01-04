@@ -209,7 +209,11 @@ public class ViewApplicantsActivity extends AppCompatActivity {
                                 String email = userObj.optString("email", "");
                                 String phone = userObj.optString("phone", "");
                                 String bio = userObj.optString("bio", "");
+                                // Get resume_url - handle both null and empty string cases
                                 String resumeUrl = userObj.optString("resume_url", "");
+                                if (resumeUrl != null && (resumeUrl.equals("null") || resumeUrl.trim().isEmpty())) {
+                                    resumeUrl = "";
+                                }
                                 
                                 userInfoMap.put(userId, new UserPersonalInfo(email, phone, bio, resumeUrl));
                             }
@@ -221,7 +225,15 @@ public class ViewApplicantsActivity extends AppCompatActivity {
                                     app.setStudentEmail(info.email);
                                     app.setStudentPhone(info.phone);
                                     app.setStudentBio(info.bio);
-                                    app.setStudentResumeUrl(info.resumeUrl);
+                                    // Set resume URL - ensure it's not "null" string
+                                    String resumeUrl = info.resumeUrl;
+                                    if (resumeUrl != null && resumeUrl.equals("null")) {
+                                        resumeUrl = "";
+                                    }
+                                    app.setStudentResumeUrl(resumeUrl);
+                                } else {
+                                    // If user info not found, ensure resume URL is empty
+                                    app.setStudentResumeUrl("");
                                 }
                             }
                             
