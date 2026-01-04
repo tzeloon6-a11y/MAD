@@ -244,23 +244,14 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                         // Update applied jobs list based on appliedJobs map
                         updateAppliedJobsList();
                         
-                        // Show the appropriate tab
+                        // Check which jobs have been applied to
+                        checkAppliedJobs();
+                        
+                        // Show the appropriate tab (this will handle empty state)
                         if (isShowingAppliedTab) {
                             showAppliedJobsTab();
                         } else {
                             showAllJobsTab();
-                        }
-                        
-                        // Check which jobs have been applied to
-                        checkAppliedJobs();
-
-                        // Show/hide empty state
-                        if (jobs.isEmpty()) {
-                            cardStackView.setVisibility(View.GONE);
-                            emptyStateLayout.setVisibility(View.VISIBLE);
-                        } else {
-                            cardStackView.setVisibility(View.VISIBLE);
-                            emptyStateLayout.setVisibility(View.GONE);
                         }
 
                     } catch (Exception e) {
@@ -614,8 +605,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                             if (response.length() > 0) {
                                 appliedJobs.put(jobId, true);
                                 // Find the job in allJobsList and add to appliedJobsList
-                                for (Job job : allJobsList) {
-                                    if (job.getJobId().equals(jobId)) {
+                                for (Job jobInList : allJobsList) {
+                                    if (jobInList.getJobId().equals(jobId)) {
                                         // Check if already in applied list
                                         boolean exists = false;
                                         for (Job appliedJob : appliedJobsList) {
@@ -625,7 +616,7 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                                             }
                                         }
                                         if (!exists) {
-                                            appliedJobsList.add(job);
+                                            appliedJobsList.add(jobInList);
                                         }
                                         break;
                                     }
