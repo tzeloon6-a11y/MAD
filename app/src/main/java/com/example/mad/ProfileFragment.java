@@ -96,39 +96,41 @@ public class ProfileFragment extends Fragment {
         SharedPreferences prefs = requireActivity().getSharedPreferences(
                 LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
 
-        // Retrieve data using the same keys used in EditProfileActivity
+        // Retrieve basic data from SharedPreferences
         String name = prefs.getString(LoginActivity.KEY_NAME, "User");
         String role = prefs.getString(LoginActivity.KEY_ROLE, "student");
-        String phone = prefs.getString("user_phone", "No Phone");
-        String bio = prefs.getString("user_bio", "No bio added yet.");
-
+        
+        // Set basic info immediately
         tvName.setText(name);
         tvRole.setText("Role: " + role);
-        tvPhone.setText("Phone: " + phone);
-        tvBio.setText(bio);
-
-        // Student-specific UI - fetch resume URL from database
-        if ("student".equals(role)) {
-            // First check SharedPreferences (might be cached)
-            resumeUrl = prefs.getString("user_resume_url", null);
-            
-            // Also fetch from database to ensure we have the latest
-            if (currentUserId != null && !currentUserId.isEmpty()) {
-                fetchResumeUrlFromDatabase();
-            } else {
-                updateResumeStatus();
-            }
-            tvResumeStatus.setVisibility(View.VISIBLE);
+        
+        // Fetch latest profile data from database (phone, bio, resume_url)
+        // This ensures we always have the most up-to-date information
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            fetchFullProfileFromDatabase();
         } else {
-            tvResumeStatus.setVisibility(View.GONE);
+            // Fallback to SharedPreferences if no user ID
+            String phone = prefs.getString("user_phone", "No Phone");
+            String bio = prefs.getString("user_bio", "No bio added yet.");
+            tvPhone.setText("Phone: " + phone);
+            tvBio.setText(bio);
+            
+            // Student-specific UI
+            if ("student".equals(role)) {
+                resumeUrl = prefs.getString("user_resume_url", null);
+                updateResumeStatus();
+                tvResumeStatus.setVisibility(View.VISIBLE);
+            } else {
+                tvResumeStatus.setVisibility(View.GONE);
+            }
         }
     }
     
-    private void fetchResumeUrlFromDatabase() {
+    private void fetchFullProfileFromDatabase() {
         try {
             String encodedUserId = java.net.URLEncoder.encode(currentUserId, "UTF-8");
             String url = SupabaseConfig.SUPABASE_URL
-                    + "/rest/v1/users?select=resume_url&id=eq." + encodedUserId
+                    + "/rest/v1/users?select=id,name,phone,bio,resume_url&id=eq." + encodedUserId
                     + "&limit=1";
 
             JsonArrayRequest request = new JsonArrayRequest(
@@ -139,24 +141,59 @@ public class ProfileFragment extends Fragment {
                         try {
                             if (response.length() > 0) {
                                 JSONObject userObj = response.getJSONObject(0);
-                                resumeUrl = userObj.optString("resume_url", "");
                                 
-                                // Update SharedPreferences for future use
-                                if (resumeUrl != null && !resumeUrl.isEmpty()) {
+                                // Update name (in case it changed)
+                                String name = userObj.optString("name", "");
+                                if (!name.isEmpty()) {
+                                    tvName.setText(name);
+                                    // Update SharedPreferences
                                     SharedPreferences prefs = requireActivity().getSharedPreferences(
                                             LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
-                                    prefs.edit().putString("user_resume_url", resumeUrl).apply();
+                                    prefs.edit().putString(LoginActivity.KEY_NAME, name).apply();
                                 }
+                                
+                                // Get phone and bio
+                                String phone = userObj.optString("phone", "");
+                                String bio = userObj.optString("bio", "");
+                                resumeUrl = userObj.optString("resume_url", "");
+                                
+                                // Update UI
+                                tvPhone.setText("Phone: " + (phone.isEmpty() ? "Not set" : phone));
+                                tvBio.setText(bio.isEmpty() ? "No bio added yet." : bio);
+                                
+                                // Update SharedPreferences for future use
+                                SharedPreferences prefs = requireActivity().getSharedPreferences(
+                                        LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = prefs.edit();
+                                editor.putString("user_phone", phone);
+                                editor.putString("user_bio", bio);
+                                if (resumeUrl != null && !resumeUrl.isEmpty()) {
+                                    editor.putString("user_resume_url", resumeUrl);
+                                }
+                                editor.apply();
+                                
+                                // Handle resume status for students
+                                String role = prefs.getString(LoginActivity.KEY_ROLE, "student");
+                                if ("student".equals(role)) {
+                                    updateResumeStatus();
+                                    tvResumeStatus.setVisibility(View.VISIBLE);
+                                } else {
+                                    tvResumeStatus.setVisibility(View.GONE);
+                                }
+                            } else {
+                                // User not found - use SharedPreferences fallback
+                                useSharedPreferencesFallback();
                             }
-                            updateResumeStatus();
                         } catch (Exception e) {
                             e.printStackTrace();
-                            updateResumeStatus();
+                            // On error, use SharedPreferences fallback
+                            useSharedPreferencesFallback();
                         }
                     },
                     error -> {
-                        // On error, use cached value from SharedPreferences
-                        updateResumeStatus();
+                        error.printStackTrace();
+                        // On error, use SharedPreferences fallback
+                        useSharedPreferencesFallback();
                     }
             ) {
                 @Override
@@ -169,9 +206,29 @@ public class ProfileFragment extends Fragment {
 
         } catch (Exception e) {
             e.printStackTrace();
-            updateResumeStatus();
+            useSharedPreferencesFallback();
         }
     }
+    
+    private void useSharedPreferencesFallback() {
+        SharedPreferences prefs = requireActivity().getSharedPreferences(
+                LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        String role = prefs.getString(LoginActivity.KEY_ROLE, "student");
+        String phone = prefs.getString("user_phone", "No Phone");
+        String bio = prefs.getString("user_bio", "No bio added yet.");
+        
+        tvPhone.setText("Phone: " + phone);
+        tvBio.setText(bio);
+        
+        if ("student".equals(role)) {
+            resumeUrl = prefs.getString("user_resume_url", null);
+            updateResumeStatus();
+            tvResumeStatus.setVisibility(View.VISIBLE);
+        } else {
+            tvResumeStatus.setVisibility(View.GONE);
+        }
+    }
+    
     
     private void updateResumeStatus() {
         if (resumeUrl != null && !resumeUrl.isEmpty()) {

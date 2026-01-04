@@ -140,11 +140,13 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
-        String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/users?id=eq." + currentUserId;
+        try {
+            String encodedUserId = java.net.URLEncoder.encode(currentUserId, "UTF-8");
+            String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/users?id=eq." + encodedUserId;
 
-        StringRequest request = new StringRequest(
-                Request.Method.PATCH,
-                url,
+            StringRequest request = new StringRequest(
+                    Request.Method.PATCH,
+                    url,
                 response -> {
                     SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
                     SharedPreferences.Editor editor = prefs.edit();
@@ -193,6 +195,10 @@ public class EditProfileActivity extends AppCompatActivity {
             }
         };
 
-        ApiClient.getRequestQueue(this).add(request);
+            ApiClient.getRequestQueue(this).add(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error encoding user ID", Toast.LENGTH_SHORT).show();
+        }
     }
 }
