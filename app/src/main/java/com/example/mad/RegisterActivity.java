@@ -36,9 +36,9 @@ public class RegisterActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         setContentView(R.layout.activity_register);
 
-        // Status bar - using modern API
+        // Status bar - setStatusBarColor is still valid, only the flags were deprecated
         Window window = getWindow();
-        WindowCompat.setStatusBarColor(window, Color.BLACK);
+        window.setStatusBarColor(Color.BLACK);
 
         WindowInsetsControllerCompat windowInsetsController =
                 WindowCompat.getInsetsController(window, window.getDecorView());
