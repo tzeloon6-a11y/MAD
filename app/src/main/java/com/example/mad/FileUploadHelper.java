@@ -131,20 +131,17 @@ public class FileUploadHelper {
         String bucketName = "resumes"; // Change this to your actual bucket name
         
         // URL encode the file name to handle special characters
-        try {
-            fileName = java.net.URLEncoder.encode(fileName, "UTF-8").replace("+", "%20");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // Create a final copy for use in lambda
+        final String encodedFileName = encodeFileName(fileName);
         
-        String uploadUrl = SupabaseConfig.SUPABASE_URL + "/storage/v1/object/" + bucketName + "/" + fileName;
+        String uploadUrl = SupabaseConfig.SUPABASE_URL + "/storage/v1/object/" + bucketName + "/" + encodedFileName;
         
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 uploadUrl,
                 response -> {
                     // Success - construct public URL
-                    String publicUrl = SupabaseConfig.SUPABASE_URL + "/storage/v1/object/public/" + bucketName + "/" + fileName;
+                    String publicUrl = SupabaseConfig.SUPABASE_URL + "/storage/v1/object/public/" + bucketName + "/" + encodedFileName;
                     callback.onSuccess(publicUrl);
                 },
                 error -> {
@@ -322,6 +319,19 @@ public class FileUploadHelper {
         }
         
         return -1; // Unknown size
+    }
+    
+    /**
+     * URL encodes a file name for use in URLs
+     * Returns the original filename if encoding fails
+     */
+    private static String encodeFileName(String fileName) {
+        try {
+            return java.net.URLEncoder.encode(fileName, "UTF-8").replace("+", "%20");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return fileName; // Fallback to original if encoding fails
+        }
     }
 }
 
