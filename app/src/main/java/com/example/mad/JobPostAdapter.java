@@ -65,7 +65,8 @@ public class JobPostAdapter extends RecyclerView.Adapter<JobPostAdapter.JobPostV
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tv_job_title);
             tvDesc = itemView.findViewById(R.id.tv_job_description);
-            tvRecruiter = itemView.findViewById(R.id.tv_job_recruiter);
+            // ✅ FIXED: Uncommented these lines to initialize the TextViews
+            tvRecruiter = itemView.findViewById(R.id.tv_recruiter_name);
             tvCreatedAt = itemView.findViewById(R.id.tv_job_created_at);
         }
     }

@@ -9,7 +9,6 @@
     android:padding="16dp"
     android:paddingTop="24dp">
 
-    <!-- Existing profile fields -->
     <TextView
         android:id="@+id/tv_profile_name"
         android:layout_width="wrap_content"
@@ -26,9 +25,27 @@
         android:text="Role"
         android:textColor="@color/classic_text_secondary"
         android:textSize="16sp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="8dp"/>
 
-    <!-- Resume status (student) -->
+    <TextView
+        android:id="@+id/tv_profile_phone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Phone: Not set"
+        android:textColor="@color/classic_text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/tv_profile_bio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No bio added yet."
+        android:textColor="@color/classic_text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp"
+        android:fontStyle="italic"/>
+
     <TextView
         android:id="@+id/tv_resume_status"
         android:layout_width="wrap_content"
@@ -44,7 +61,6 @@
         android:layout_marginBottom="16dp"/>
 
     <TextView
-        android:id="@+id/tv_profile_header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="My Experience Posts"
@@ -58,18 +74,26 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
-        
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_edit_profile"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Edit Profile"
+        android:textColor="@color/app_blue"
+        app:strokeColor="@color/app_blue" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_logout"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:text="Logout"
         android:textColor="#D32F2F"
-        app:icon="@drawable/ic_logout_red_24dp"
-        app:iconTint="#D32F2F"
         app:strokeColor="#D32F2F" />
 
 </LinearLayout>
