@@ -105,8 +105,7 @@ public class FileUploadHelper {
             inputStream.close();
             buffer.close();
             
-            // Get file name and extension
-            String fileName = getFileName(context, fileUri);
+            // Ensure we have a valid file name (reuse the one from validation or generate new)
             if (fileName == null || fileName.isEmpty()) {
                 // Generate unique file name
                 String extension = getFileExtension(context, fileUri);
