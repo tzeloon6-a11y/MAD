@@ -31,6 +31,8 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
 
     private List<ApplicationModel> applicantList;
     private OnStartChatClickListener clickListener;
+    private java.util.Map<String, String> applicationToChatIdMap = new java.util.HashMap<>(); // Maps application_id to chat_id
+    private Context context;
 
     public interface OnStartChatClickListener {
         void onStartChat(ApplicationModel application);
@@ -40,10 +42,77 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         this.applicantList = applicantList;
         this.clickListener = clickListener;
     }
+    
+    public void setContext(Context context) {
+        this.context = context;
+    }
 
     public void updateData(List<ApplicationModel> newList) {
         this.applicantList = newList;
+        // Clear and refresh chat ID map
+        applicationToChatIdMap.clear();
         notifyDataSetChanged();
+    }
+    
+    public void refreshChatStatuses() {
+        // Refresh all chat statuses for current applications
+        if (context != null && applicantList != null) {
+            for (int i = 0; i < applicantList.size(); i++) {
+                ApplicationModel application = applicantList.get(i);
+                String applicationId = application.getApplicationId();
+                if (applicationId != null && !applicationId.isEmpty() && !applicationToChatIdMap.containsKey(applicationId)) {
+                    checkChatExistsForApplication(applicationId, i);
+                }
+            }
+        }
+    }
+    
+    private void checkChatExistsForApplication(String applicationId, int position) {
+        String checkUrl = SupabaseConfig.SUPABASE_URL
+                + "/rest/v1/chats?application_id=eq." + applicationId
+                + "&select=chat_id"
+                + "&limit=1";
+
+        JsonArrayRequest checkRequest = new JsonArrayRequest(
+                Request.Method.GET,
+                checkUrl,
+                null,
+                response -> {
+                    try {
+                        if (response.length() > 0) {
+                            JSONObject chat = response.getJSONObject(0);
+                            String chatId = chat.optString("chat_id", "");
+                            if (chatId != null && !chatId.isEmpty()) {
+                                applicationToChatIdMap.put(applicationId, chatId);
+                                // Notify item changed to update button
+                                if (context instanceof android.app.Activity) {
+                                    ((android.app.Activity) context).runOnUiThread(() -> {
+                                        notifyItemChanged(position);
+                                    });
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                },
+                error -> {
+                    // Silent fail
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        if (context != null) {
+            ApiClient.getRequestQueue(context).add(checkRequest);
+        }
     }
 
     @NonNull
@@ -68,12 +137,84 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         }
         holder.tvInitialMessage.setText(message != null ? message : "No message provided");
         
-        // Set click listener for Start Chat button
-        holder.btnStartChat.setOnClickListener(v -> {
-            if (clickListener != null) {
-                clickListener.onStartChat(application);
+        // Check if chat exists for this application
+        String applicationId = application.getApplicationId();
+        String existingChatId = applicationToChatIdMap.get(applicationId);
+        
+        if (existingChatId != null && !existingChatId.isEmpty()) {
+            // Chat exists - show "Go Chat" button
+            holder.btnStartChat.setText("Go Chat");
+            holder.btnStartChat.setOnClickListener(v -> {
+                // Navigate directly to existing chat
+                navigateToChat(holder.itemView.getContext(), existingChatId);
+            });
+        } else {
+            // No chat exists - show "Start Chat" button and check for existing chat
+            holder.btnStartChat.setText("Start Chat");
+            holder.btnStartChat.setOnClickListener(v -> {
+                if (clickListener != null) {
+                    clickListener.onStartChat(application);
+                }
+            });
+            
+            // Check if chat exists in background (async)
+            if (context != null && applicationId != null && !applicationId.isEmpty()) {
+                checkChatExists(applicationId, holder, position);
             }
-        });
+        }
+    }
+    
+    private void checkChatExists(String applicationId, ApplicantViewHolder holder, int position) {
+        String checkUrl = SupabaseConfig.SUPABASE_URL
+                + "/rest/v1/chats?application_id=eq." + applicationId
+                + "&select=chat_id"
+                + "&limit=1";
+
+        JsonArrayRequest checkRequest = new JsonArrayRequest(
+                Request.Method.GET,
+                checkUrl,
+                null,
+                response -> {
+                    try {
+                        if (response.length() > 0) {
+                            JSONObject chat = response.getJSONObject(0);
+                            String chatId = chat.optString("chat_id", "");
+                            if (chatId != null && !chatId.isEmpty()) {
+                                // Store chat ID in map
+                                applicationToChatIdMap.put(applicationId, chatId);
+                                
+                                // Update button on main thread
+                                if (holder.itemView.getContext() instanceof android.app.Activity) {
+                                    ((android.app.Activity) holder.itemView.getContext()).runOnUiThread(() -> {
+                                        holder.btnStartChat.setText("Go Chat");
+                                        holder.btnStartChat.setOnClickListener(v -> {
+                                            navigateToChat(holder.itemView.getContext(), chatId);
+                                        });
+                                    });
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                },
+                error -> {
+                    // Silent fail - button stays as "Start Chat"
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        if (context != null) {
+            ApiClient.getRequestQueue(context).add(checkRequest);
+        }
     }
 
     @Override
@@ -353,7 +494,7 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         ApiClient.getRequestQueue(context).add(updateRequest);
     }
 
-    private static void navigateToChat(Context context, String chatId) {
+    public static void navigateToChat(Context context, String chatId) {
         Intent intent = new Intent(context, ChatDetailActivity.class);
         intent.putExtra("chatId", chatId);
         context.startActivity(intent);

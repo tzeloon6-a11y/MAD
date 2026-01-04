@@ -30,6 +30,17 @@ import java.util.List;
 import java.util.Map;
 
 public class RecruiterHomeFragment extends Fragment {
+    
+    // Helper class to sort jobs by created_at
+    private static class JobWithDate {
+        JobModel job;
+        String createdAt;
+        
+        JobWithDate(JobModel job, String createdAt) {
+            this.job = job;
+            this.createdAt = createdAt;
+        }
+    }
 
     private RecyclerView recyclerView;
     private RecruiterJobAdapter adapter;
@@ -71,8 +82,10 @@ public class RecruiterHomeFragment extends Fragment {
 
         String currentUserId = prefs.getString("user_id", "user_001");
 
-        // B. Construct the URL
-        String url = ApiClient.BASE_URL + "job_posts?select=*&user_id=eq." + currentUserId;
+        // B. Construct the URL with ordering by created_at descending (newest first)
+        String url = SupabaseConfig.SUPABASE_URL 
+                + "/rest/v1/job_posts?select=*&user_id=eq." + currentUserId
+                + "&order=created_at.desc";
 
         // C. Create the Request
         JsonArrayRequest request = new JsonArrayRequest(
@@ -84,6 +97,9 @@ public class RecruiterHomeFragment extends Fragment {
                     public void onResponse(JSONArray response) {
                         jobList.clear();
                         try {
+                            // Temporary list to store jobs with their created_at dates for sorting
+                            List<JobWithDate> jobsWithDates = new ArrayList<>();
+                            
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject jobObject = response.getJSONObject(i);
 
@@ -100,9 +116,29 @@ public class RecruiterHomeFragment extends Fragment {
 
                                 // Recruiter ID (which is the user_id)
                                 String recruiterId = jobObject.optString("user_id");
+                                
+                                // Get created_at for sorting
+                                String createdAt = jobObject.optString("created_at", "");
 
-                                // Add to list
-                                jobList.add(new JobModel(id, title, description, recruiterId));
+                                // Add to temporary list with date
+                                jobsWithDates.add(new JobWithDate(
+                                        new JobModel(id, title, description, recruiterId),
+                                        createdAt
+                                ));
+                            }
+                            
+                            // Sort by created_at descending (newest first) as fallback
+                            jobsWithDates.sort((a, b) -> {
+                                String dateA = a.createdAt;
+                                String dateB = b.createdAt;
+                                if (dateA == null || dateB == null) return 0;
+                                // Compare dates (newest first = descending order)
+                                return dateB.compareTo(dateA);
+                            });
+                            
+                            // Extract sorted jobs
+                            for (JobWithDate jobWithDate : jobsWithDates) {
+                                jobList.add(jobWithDate.job);
                             }
 
                             // E. Refresh the List

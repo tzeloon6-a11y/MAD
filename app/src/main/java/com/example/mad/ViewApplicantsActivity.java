@@ -69,6 +69,7 @@ public class ViewApplicantsActivity extends AppCompatActivity {
             // Handle "Start Chat" button click
             ApplicantAdapter.startChat(this, application, jobTitle, recruiterId);
         });
+        adapter.setContext(this); // Set context for checking existing chats
         recyclerView.setAdapter(adapter);
 
         // 4. Load Data
@@ -127,6 +128,9 @@ public class ViewApplicantsActivity extends AppCompatActivity {
 
                         // Update adapter with new data
                         adapter.updateData(applicantList);
+                        
+                        // Check for existing chats after loading applicants
+                        adapter.refreshChatStatuses();
 
                         if (applicantList.isEmpty()) {
                             Toast.makeText(this, "No applicants found for this job.", Toast.LENGTH_SHORT).show();
@@ -157,5 +161,14 @@ public class ViewApplicantsActivity extends AppCompatActivity {
         };
 
         ApiClient.getRequestQueue(this).add(request);
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh chat statuses when returning to this activity (e.g., after creating a chat)
+        if (adapter != null) {
+            adapter.refreshChatStatuses();
+        }
     }
 }
