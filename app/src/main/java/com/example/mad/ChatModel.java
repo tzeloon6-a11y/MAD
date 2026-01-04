@@ -9,6 +9,9 @@ public class ChatModel {
     private String jobTitle;
     private String lastMessage;
     private String timestamp;
+    private String studentName;
+    private String studentBio;
+    private String recruiterName;
 
     public ChatModel(String chatId, String jobId, String studentId, String recruiterId,
                      String jobTitle, String lastMessage, String timestamp) {
@@ -47,6 +50,30 @@ public class ChatModel {
 
     public String getTimestamp() {
         return timestamp;
+    }
+    
+    public String getStudentName() {
+        return studentName;
+    }
+    
+    public void setStudentName(String studentName) {
+        this.studentName = studentName;
+    }
+    
+    public String getStudentBio() {
+        return studentBio;
+    }
+    
+    public void setStudentBio(String studentBio) {
+        this.studentBio = studentBio;
+    }
+    
+    public String getRecruiterName() {
+        return recruiterName;
+    }
+    
+    public void setRecruiterName(String recruiterName) {
+        this.recruiterName = recruiterName;
     }
 }
 

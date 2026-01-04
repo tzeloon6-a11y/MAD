@@ -24,6 +24,19 @@
             android:textSize="16sp"
             android:textColor="@color/classic_text_primary" />
 
+        <!-- Other User's Bio (for recruiters viewing students) -->
+        <TextView
+            android:id="@+id/tv_other_user_bio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="User bio..."
+            android:textSize="12sp"
+            android:textColor="@color/classic_text_secondary"
+            android:layout_marginTop="2dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:visibility="gone" />
+
         <!-- Job Title -->
         <TextView
             android:id="@+id/tv_job_title"

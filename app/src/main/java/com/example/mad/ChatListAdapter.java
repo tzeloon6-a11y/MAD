@@ -56,10 +56,21 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
         // Set timestamp (format if needed)
         holder.tvTimestamp.setText(formatTimestamp(chat.getTimestamp()));
         
-        // Set other user's name
-        // For now, using a simple approach - you may want to fetch actual user names
+        // Set other user's name and bio
+        // If current user is recruiter, show student name and bio
+        // If current user is student, show recruiter name
         String otherUserName = determineOtherUserName(chat);
+        String otherUserBio = determineOtherUserBio(chat);
+        
         holder.tvOtherUserName.setText(otherUserName);
+        if (holder.tvOtherUserBio != null) {
+            if (otherUserBio != null && !otherUserBio.isEmpty()) {
+                holder.tvOtherUserBio.setText(otherUserBio);
+                holder.tvOtherUserBio.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvOtherUserBio.setVisibility(View.GONE);
+            }
+        }
         
         // Set click listener
         holder.itemView.setOnClickListener(v -> {
@@ -79,14 +90,22 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
         if (currentUserId != null) {
             if (currentUserId.equals(chat.getStudentId())) {
                 // Current user is student, so other user is recruiter
-                return "Recruiter";
+                return chat.getRecruiterName() != null ? chat.getRecruiterName() : "Recruiter";
             } else if (currentUserId.equals(chat.getRecruiterId())) {
                 // Current user is recruiter, so other user is student
-                return "Student";
+                return chat.getStudentName() != null ? chat.getStudentName() : "Student";
             }
         }
         // Fallback if user ID doesn't match
         return "Chat Participant";
+    }
+    
+    private String determineOtherUserBio(ChatModel chat) {
+        // Return bio only if current user is recruiter (viewing student)
+        if (currentUserId != null && currentUserId.equals(chat.getRecruiterId())) {
+            return chat.getStudentBio();
+        }
+        return null; // Don't show bio for recruiter when student is viewing
     }
 
     private String formatTimestamp(String timestamp) {
@@ -112,6 +131,7 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
 
     static class ChatListViewHolder extends RecyclerView.ViewHolder {
         TextView tvOtherUserName;
+        TextView tvOtherUserBio;
         TextView tvJobTitle;
         TextView tvLastMessage;
         TextView tvTimestamp;
@@ -119,6 +139,7 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
         public ChatListViewHolder(@NonNull View itemView) {
             super(itemView);
             tvOtherUserName = itemView.findViewById(R.id.tv_other_user_name);
+            tvOtherUserBio = itemView.findViewById(R.id.tv_other_user_bio);
             tvJobTitle = itemView.findViewById(R.id.tv_job_title);
             tvLastMessage = itemView.findViewById(R.id.tv_last_message);
             tvTimestamp = itemView.findViewById(R.id.tv_timestamp);

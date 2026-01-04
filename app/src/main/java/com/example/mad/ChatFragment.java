@@ -93,8 +93,8 @@ public class ChatFragment extends Fragment {
             // Query chats where current user is either student or recruiter
             String encodedUserId = URLEncoder.encode(currentUserId, "UTF-8");
             
-            // Build query - try OR syntax first
-            // Note: If this fails, the table might not exist or column names might be different
+            // Build query - we'll fetch user data separately for simplicity
+            // Supabase foreign key joins can be complex, so we'll do a simpler approach
             String url = SupabaseConfig.SUPABASE_URL
                     + "/rest/v1/chats?select=*"
                     + "&or=(student_id.eq." + encodedUserId + ",recruiter_id.eq." + encodedUserId + ")"
@@ -111,6 +111,11 @@ public class ChatFragment extends Fragment {
                         try {
                             ArrayList<ChatModel> chatList = new ArrayList<>();
 
+                            // First pass: collect all chat data and user IDs
+                            ArrayList<ChatModel> tempChatList = new ArrayList<>();
+                            ArrayList<String> studentIds = new ArrayList<>();
+                            ArrayList<String> recruiterIds = new ArrayList<>();
+                            
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject obj = response.getJSONObject(i);
 
@@ -122,7 +127,7 @@ public class ChatFragment extends Fragment {
                                 String lastMessage = obj.optString("last_message", "");
                                 String timestamp = obj.optString("timestamp", "");
 
-                                chatList.add(new ChatModel(
+                                ChatModel chatModel = new ChatModel(
                                         chatId,
                                         jobId,
                                         studentId,
@@ -130,15 +135,28 @@ public class ChatFragment extends Fragment {
                                         jobTitle,
                                         lastMessage,
                                         timestamp
-                                ));
+                                );
+                                
+                                tempChatList.add(chatModel);
+                                
+                                if (studentId != null && !studentId.isEmpty() && !studentIds.contains(studentId)) {
+                                    studentIds.add(studentId);
+                                }
+                                if (recruiterId != null && !recruiterId.isEmpty() && !recruiterIds.contains(recruiterId)) {
+                                    recruiterIds.add(recruiterId);
+                                }
                             }
+                            
+                            // Fetch user data for all students and recruiters
+                            fetchUserDataAndUpdateChats(tempChatList, studentIds, recruiterIds);
 
                             // If no chats found, show example chats
-                            if (chatList.isEmpty()) {
-                                chatList = getExampleChats();
+                            if (tempChatList.isEmpty()) {
+                                adapter.updateData(getExampleChats());
+                            } else {
+                                // Fetch user data and update chats
+                                fetchUserDataAndUpdateChats(tempChatList, studentIds, recruiterIds);
                             }
-
-                            adapter.updateData(chatList);
 
                         } catch (Exception e) {
                             e.printStackTrace();
