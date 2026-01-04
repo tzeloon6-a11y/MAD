@@ -48,11 +48,11 @@ public class MainActivity extends AppCompatActivity {
                     selectedFragment = new StudentHomeFragment();
                 }
             } else if (id == R.id.nav_chat) {
-                selectedFragment = new ChatFragment();
+                selectedFragment = ChatFragment.newInstance();
             } else if (id == R.id.nav_post) {
-                selectedFragment = new PostFragment();
+                selectedFragment = PostFragment.newInstance();
             } else if (id == R.id.nav_profile) {
-                selectedFragment = new ProfileFragment();
+                selectedFragment = ProfileFragment.newInstance();
             }
 
             if (selectedFragment != null) {

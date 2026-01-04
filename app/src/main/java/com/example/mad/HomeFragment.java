@@ -26,7 +26,12 @@ public class HomeFragment extends Fragment {
     private RecyclerView rvJobPosts;
     private JobPostAdapter adapter;
 
-    public HomeFragment() {}
+    // Use static factory method instead of public constructor
+    public static HomeFragment newInstance() {
+        return new HomeFragment();
+    }
+
+    private HomeFragment() {}
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,

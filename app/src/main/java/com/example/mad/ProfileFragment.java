@@ -32,7 +32,12 @@ public class ProfileFragment extends Fragment {
     private ExperiencePostAdapter adapter;
     private MaterialButton btnLogout, btnEditProfile;
 
-    public ProfileFragment() { }
+    // Use static factory method instead of public constructor
+    public static ProfileFragment newInstance() {
+        return new ProfileFragment();
+    }
+
+    private ProfileFragment() { }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,

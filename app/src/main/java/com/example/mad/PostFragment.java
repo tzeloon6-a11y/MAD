@@ -39,7 +39,12 @@ public class PostFragment extends Fragment {
     private Uri selectedMediaUri;
     private String selectedMediaType; // "image" or "video"
 
-    public PostFragment() {}
+    // Use static factory method instead of public constructor
+    public static PostFragment newInstance() {
+        return new PostFragment();
+    }
+
+    private PostFragment() {}
 
     private final ActivityResultLauncher<Intent> mediaPickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {

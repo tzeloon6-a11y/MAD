@@ -31,8 +31,13 @@ public class ChatFragment extends Fragment {
     private ChatListAdapter adapter;
     private String currentUserId;
 
-    public ChatFragment() {
-        // Required empty public constructor
+    // Use static factory method instead of public constructor
+    public static ChatFragment newInstance() {
+        return new ChatFragment();
+    }
+
+    private ChatFragment() {
+        // Required empty private constructor
     }
 
     @Override
