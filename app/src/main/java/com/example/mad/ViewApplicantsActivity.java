@@ -1,5 +1,7 @@
 package com.example.mad;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -17,19 +19,19 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ViewApplicantsActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
-    JobApplicantAdapter adapter; // ✅ Uses your renamed Adapter
-    List<Map<String, String>> applicantList;
+    ApplicantAdapter adapter;
+    List<ApplicationModel> applicantList;
 
     TextView tvHeader;
     ProgressBar progressBar;
     String jobId;
+    String jobTitle;
+    String recruiterId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,17 +45,30 @@ public class ViewApplicantsActivity extends AppCompatActivity {
 
         // 2. Get Data passed from the Recruiter Job List
         jobId = getIntent().getStringExtra("job_id");
-        String jobTitle = getIntent().getStringExtra("job_title");
+        jobTitle = getIntent().getStringExtra("job_title");
+
+        // Get current recruiter ID from SharedPreferences
+        SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
+        recruiterId = prefs.getString(LoginActivity.KEY_USER_ID, null);
+
+        if (recruiterId == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         // Set the header text
         if (jobTitle != null) {
             tvHeader.setText("Applicants: " + jobTitle);
         }
 
-        // 3. Setup RecyclerView
+        // 3. Setup RecyclerView with ApplicantAdapter
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         applicantList = new ArrayList<>();
-        adapter = new JobApplicantAdapter(applicantList);
+        adapter = new ApplicantAdapter(applicantList, application -> {
+            // Handle "Start Chat" button click
+            ApplicantAdapter.startChat(this, application, jobTitle, recruiterId);
+        });
         recyclerView.setAdapter(adapter);
 
         // 4. Load Data
@@ -67,11 +82,12 @@ public class ViewApplicantsActivity extends AppCompatActivity {
     private void fetchApplicants() {
         progressBar.setVisibility(View.VISIBLE);
 
-        // ⚠️ QUERY EXPLANATION:
-        // 1. Look in 'applications' table.
-        // 2. Filter where job_id equals our ID.
-        // 3. JOIN with 'users' table (users(*)) to get name/email.
-        String url = ApiClient.BASE_URL + "applications?select=*,users(*)&job_id=eq." + jobId;
+        // Query applications table with all necessary fields
+        // Note: We're fetching all fields directly from applications table since student_name is stored there
+        String url = SupabaseConfig.SUPABASE_URL
+                + "/rest/v1/applications?job_id=eq." + jobId
+                + "&select=*"
+                + "&order=timestamp.desc";
 
         JsonArrayRequest request = new JsonArrayRequest(
                 Request.Method.GET,
@@ -84,28 +100,33 @@ public class ViewApplicantsActivity extends AppCompatActivity {
                         for (int i = 0; i < response.length(); i++) {
                             JSONObject appObj = response.getJSONObject(i);
 
-                            // 1. Get Application Status
-                            String status = appObj.optString("status", "Applied");
+                            // Extract all application fields
+                            String applicationId = appObj.optString("application_id", "");
+                            String studentId = appObj.optString("student_id", "");
+                            String studentName = appObj.optString("student_name", "Unknown Student");
+                            String appRecruiterId = appObj.optString("recruiter_id", "");
+                            String appJobId = appObj.optString("job_id", "");
+                            String status = appObj.optString("status", "PENDING");
+                            String initialMessage = appObj.optString("initial_message", "");
+                            String timestamp = appObj.optString("timestamp", "");
 
-                            // 2. Extract Student Details from the joined 'users' object
-                            // NOTE: "users" must match the name of your Foreign Key relation in Supabase
-                            if (!appObj.isNull("users")) {
-                                JSONObject userObj = appObj.getJSONObject("users");
+                            // Create ApplicationModel object
+                            ApplicationModel application = new ApplicationModel(
+                                    applicationId,
+                                    studentId,
+                                    studentName,
+                                    appRecruiterId,
+                                    appJobId,
+                                    status,
+                                    initialMessage,
+                                    timestamp
+                            );
 
-                                String name = userObj.optString("name", "Unknown Student");
-                                String email = userObj.optString("email", "-");
-
-                                // 3. Add to List
-                                Map<String, String> student = new HashMap<>();
-                                student.put("name", name);
-                                student.put("email", email);
-                                student.put("status", status);
-
-                                applicantList.add(student);
-                            }
+                            applicantList.add(application);
                         }
 
-                        adapter.notifyDataSetChanged();
+                        // Update adapter with new data
+                        adapter.updateData(applicantList);
 
                         if (applicantList.isEmpty()) {
                             Toast.makeText(this, "No applicants found for this job.", Toast.LENGTH_SHORT).show();
@@ -113,7 +134,7 @@ public class ViewApplicantsActivity extends AppCompatActivity {
 
                     } catch (Exception e) {
                         e.printStackTrace();
-                        Toast.makeText(this, "Error parsing student data", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Error parsing applicant data", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
@@ -122,7 +143,7 @@ public class ViewApplicantsActivity extends AppCompatActivity {
                     if (error.networkResponse != null && error.networkResponse.statusCode == 404) {
                         Toast.makeText(this, "Table 'applications' not found", Toast.LENGTH_LONG).show();
                     } else if (error.networkResponse != null && error.networkResponse.statusCode == 400) {
-                        Toast.makeText(this, "Relationship error (Foreign Key missing)", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "Error loading applicants", Toast.LENGTH_LONG).show();
                     } else {
                         Toast.makeText(this, "Network Error", Toast.LENGTH_SHORT).show();
                     }
@@ -130,7 +151,7 @@ public class ViewApplicantsActivity extends AppCompatActivity {
                 }
         ) {
             @Override
-            public Map<String, String> getHeaders() {
+            public java.util.Map<String, String> getHeaders() {
                 return ApiClient.getHeaders();
             }
         };
