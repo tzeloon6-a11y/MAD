@@ -58,6 +58,12 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
     private View swipedCardView;
     private String currentUserId;
     private Map<String, Boolean> appliedJobs = new HashMap<>(); // Track which jobs have been applied to
+    
+    // Tab management
+    private MaterialButton btnAllJobs, btnAppliedJobs;
+    private boolean isShowingAppliedTab = false;
+    private List<Job> allJobsList = new ArrayList<>(); // All jobs from database
+    private List<Job> appliedJobsList = new ArrayList<>(); // Only applied jobs
 
     @Nullable
     @Override
@@ -68,20 +74,106 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         cardStackView = view.findViewById(R.id.card_stack_view);
         emptyStateLayout = view.findViewById(R.id.layout_empty_state);
         
+        // Initialize tab buttons
+        btnAllJobs = view.findViewById(R.id.btn_all_jobs);
+        btnAppliedJobs = view.findViewById(R.id.btn_applied_jobs);
+        
         // Get current user ID
         SharedPreferences prefs = requireActivity().getSharedPreferences(LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
         currentUserId = prefs.getString(LoginActivity.KEY_USER_ID, null);
         
+        // Setup tab button listeners
+        setupTabButtons();
+        
         setupCardStackView();
         loadJobsFromSupabase();
         return view;
+    }
+    
+    private void setupTabButtons() {
+        // Set initial state - "All Jobs" is selected
+        updateTabButtonStates(true);
+        
+        btnAllJobs.setOnClickListener(v -> {
+            if (!isShowingAppliedTab) return; // Already on All Jobs tab
+            isShowingAppliedTab = false;
+            updateTabButtonStates(true);
+            showAllJobsTab();
+        });
+        
+        btnAppliedJobs.setOnClickListener(v -> {
+            if (isShowingAppliedTab) return; // Already on Applied tab
+            isShowingAppliedTab = true;
+            updateTabButtonStates(false);
+            showAppliedJobsTab();
+        });
+    }
+    
+    private void updateTabButtonStates(boolean allJobsSelected) {
+        if (allJobsSelected) {
+            // All Jobs tab is selected
+            btnAllJobs.setBackgroundColor(getResources().getColor(R.color.app_blue, null));
+            btnAllJobs.setTextColor(getResources().getColor(android.R.color.white, null));
+            
+            btnAppliedJobs.setBackgroundColor(getResources().getColor(android.R.color.transparent, null));
+            btnAppliedJobs.setTextColor(getResources().getColor(android.R.color.darker_gray, null));
+        } else {
+            // Applied tab is selected
+            btnAppliedJobs.setBackgroundColor(getResources().getColor(R.color.app_blue, null));
+            btnAppliedJobs.setTextColor(getResources().getColor(android.R.color.white, null));
+            
+            btnAllJobs.setBackgroundColor(getResources().getColor(android.R.color.transparent, null));
+            btnAllJobs.setTextColor(getResources().getColor(android.R.color.darker_gray, null));
+        }
+    }
+    
+    private void showAllJobsTab() {
+        // Filter out applied jobs from allJobsList
+        List<Job> availableJobs = new ArrayList<>();
+        for (Job job : allJobsList) {
+            if (!appliedJobs.containsKey(job.getJobId()) || !appliedJobs.get(job.getJobId())) {
+                availableJobs.add(job);
+            }
+        }
+        
+        // Update adapter with filtered jobs
+        adapter = new CardStackAdapter(availableJobs);
+        cardStackView.setAdapter(adapter);
+        setupButtonListeners();
+        
+        // Show/hide empty state
+        if (availableJobs.isEmpty()) {
+            cardStackView.setVisibility(View.GONE);
+            emptyStateLayout.setVisibility(View.VISIBLE);
+        } else {
+            cardStackView.setVisibility(View.VISIBLE);
+            emptyStateLayout.setVisibility(View.GONE);
+        }
+    }
+    
+    private void showAppliedJobsTab() {
+        // Show only applied jobs
+        adapter = new CardStackAdapter(new ArrayList<>(appliedJobsList));
+        cardStackView.setAdapter(adapter);
+        setupButtonListeners();
+        
+        // Show/hide empty state
+        if (appliedJobsList.isEmpty()) {
+            cardStackView.setVisibility(View.GONE);
+            emptyStateLayout.setVisibility(View.VISIBLE);
+        } else {
+            cardStackView.setVisibility(View.VISIBLE);
+            emptyStateLayout.setVisibility(View.GONE);
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
         // Reload jobs when returning to this fragment (e.g., after posting a new job)
+        // Also reload applied jobs status
         loadJobsFromSupabase();
+        checkAppliedJobs();
     }
 
     private void setupCardStackView() {
@@ -144,21 +236,19 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                         });
                         
                         // Extract sorted jobs
-                        List<Job> jobs = new ArrayList<>();
+                        allJobsList.clear();
                         for (JobWithDate jobWithDate : jobsWithDates) {
-                            jobs.add(jobWithDate.job);
+                            allJobsList.add(jobWithDate.job);
                         }
 
-                        // Update adapter with real data
-                        if (adapter == null) {
-                            adapter = new CardStackAdapter(jobs);
-                            cardStackView.setAdapter(adapter);
-                            setupButtonListeners();
+                        // Update applied jobs list based on appliedJobs map
+                        updateAppliedJobsList();
+                        
+                        // Show the appropriate tab
+                        if (isShowingAppliedTab) {
+                            showAppliedJobsTab();
                         } else {
-                            // Update existing adapter
-                            adapter = new CardStackAdapter(jobs);
-                            cardStackView.setAdapter(adapter);
-                            setupButtonListeners();
+                            showAllJobsTab();
                         }
                         
                         // Check which jobs have been applied to
@@ -354,8 +444,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                     appliedJobs.put(jobId, true);
                     requireActivity().runOnUiThread(() -> {
                         Toast.makeText(requireContext(), "Application submitted successfully!", Toast.LENGTH_SHORT).show();
-                        // Update button state immediately
-                        updateButtonStateForJob(jobId);
+                        // Move applied job to end of stack and auto-advance to next job
+                        moveJobToEndAndAdvance(job);
                     });
                 },
                 error -> {
@@ -377,8 +467,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                         appliedJobs.put(jobId, true);
                         requireActivity().runOnUiThread(() -> {
                             Toast.makeText(requireContext(), "You have already applied to this job", Toast.LENGTH_SHORT).show();
-                            // Update button state immediately
-                            updateButtonStateForJob(jobId);
+                            // Move applied job to end of stack and auto-advance to next job
+                            moveJobToEndAndAdvance(job);
                         });
                     } else {
                         // Re-enable button on error
@@ -428,6 +518,42 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         ApiClient.getRequestQueue(requireContext()).add(request);
     }
     
+    private void moveJobToEndAndAdvance(Job appliedJob) {
+        if (appliedJob == null) return;
+        
+        // Add to applied jobs list if not already there
+        boolean alreadyInAppliedList = false;
+        for (Job job : appliedJobsList) {
+            if (job.getJobId().equals(appliedJob.getJobId())) {
+                alreadyInAppliedList = true;
+                break;
+            }
+        }
+        
+        if (!alreadyInAppliedList) {
+            appliedJobsList.add(appliedJob);
+        }
+        
+        // If we're on the "All Jobs" tab, refresh it to remove the applied job and auto-advance
+        if (!isShowingAppliedTab) {
+            showAllJobsTab();
+            // The CardStackView will automatically show the next job since we filtered out the applied one
+        } else {
+            // If we're on the "Applied" tab, refresh it to show the new applied job
+            showAppliedJobsTab();
+        }
+    }
+    
+    private void updateAppliedJobsList() {
+        // Update appliedJobsList based on appliedJobs map and allJobsList
+        appliedJobsList.clear();
+        for (Job job : allJobsList) {
+            if (appliedJobs.containsKey(job.getJobId()) && appliedJobs.get(job.getJobId())) {
+                appliedJobsList.add(job);
+            }
+        }
+    }
+    
     private void updateButtonStateForJob(String jobId) {
         // Update button state for the top card if it matches this job
         View topCard = layoutManager.getTopView();
@@ -460,10 +586,10 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
     }
     
     private void checkAppliedJobs() {
-        if (currentUserId == null || adapter == null) return;
+        if (currentUserId == null || allJobsList == null || allJobsList.isEmpty()) return;
         
-        // Check each job to see if student has applied
-        for (Job job : adapter.getItems()) {
+        // Check each job in allJobsList to see if student has applied
+        for (Job job : allJobsList) {
             String jobId = job.getJobId();
             if (appliedJobs.containsKey(jobId) && appliedJobs.get(jobId)) {
                 continue; // Already checked
@@ -487,6 +613,23 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                         response -> {
                             if (response.length() > 0) {
                                 appliedJobs.put(jobId, true);
+                                // Find the job in allJobsList and add to appliedJobsList
+                                for (Job job : allJobsList) {
+                                    if (job.getJobId().equals(jobId)) {
+                                        // Check if already in applied list
+                                        boolean exists = false;
+                                        for (Job appliedJob : appliedJobsList) {
+                                            if (appliedJob.getJobId().equals(jobId)) {
+                                                exists = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!exists) {
+                                            appliedJobsList.add(job);
+                                        }
+                                        break;
+                                    }
+                                }
                                 // Update button state for the top card if it's this job
                                 updateButtonStateForJob(jobId);
                             }
