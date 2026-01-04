@@ -105,6 +105,8 @@ public class ProfileFragment extends Fragment {
         super.onResume();
         // This ensures the page updates immediately after you finish editing
         refreshProfileData();
+        // Reload experience posts to show latest posts
+        loadExperiencePostsFromSupabase();
     }
 
     private void handleLogout() {
@@ -123,7 +125,11 @@ public class ProfileFragment extends Fragment {
         String userId = prefs.getString(LoginActivity.KEY_USER_ID, null);
         if (userId == null) return;
 
-        String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/experience_posts?user_id=eq." + userId + "&select=*";
+        // Order by created_at descending to show newest posts first
+        String url = SupabaseConfig.SUPABASE_URL 
+                + "/rest/v1/experience_posts?user_id=eq." + userId 
+                + "&select=*"
+                + "&order=created_at.desc";
 
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {

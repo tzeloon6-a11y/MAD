@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.android.volley.Request;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.google.android.material.button.MaterialButton;
 import com.yuyakaido.android.cardstackview.CardStackLayoutManager;
 import com.yuyakaido.android.cardstackview.CardStackListener;
@@ -20,8 +22,12 @@ import com.yuyakaido.android.cardstackview.Duration;
 import com.yuyakaido.android.cardstackview.StackFrom;
 import com.yuyakaido.android.cardstackview.SwipeAnimationSetting;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 public class StudentHomeFragment extends Fragment implements CardStackListener {
     private CardStackLayoutManager layoutManager;
     private CardStackAdapter adapter;
@@ -38,8 +44,15 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         cardStackView = view.findViewById(R.id.card_stack_view);
         emptyStateLayout = view.findViewById(R.id.layout_empty_state);
         setupCardStackView();
-        loadJobs();
+        loadJobsFromSupabase();
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Reload jobs when returning to this fragment (e.g., after posting a new job)
+        loadJobsFromSupabase();
     }
 
     private void setupCardStackView() {
@@ -58,11 +71,84 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         cardStackView.setLayoutManager(layoutManager);
     }
 
-    private void loadJobs() {
-        List<Job> jobs = createDummyJobs();
-        adapter = new CardStackAdapter(jobs);
-        cardStackView.setAdapter(adapter);
+    private void loadJobsFromSupabase() {
+        String url = SupabaseConfig.SUPABASE_URL
+                + "/rest/v1/job_posts?select=*"
+                + "&order=created_at.desc";
 
+        JsonArrayRequest request = new JsonArrayRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+                    try {
+                        List<Job> jobs = new ArrayList<>();
+
+                        for (int i = 0; i < response.length(); i++) {
+                            JSONObject obj = response.getJSONObject(i);
+
+                            String id = String.valueOf(obj.optString("id"));
+                            String title = obj.optString("title", "No Title");
+                            String description = obj.optString("description", obj.optString("content", "No description available."));
+                            String recruiterId = obj.optString("user_id", "");
+                            
+                            // Map Supabase data to Job model
+                            // Note: job_posts table might not have companyName, wage, location
+                            // Using defaults or extracting from description if needed
+                            String companyName = obj.optString("company_name", obj.optString("recruiter_name", "Company"));
+                            String wage = obj.optString("wage", "Not specified");
+                            String location = obj.optString("location", "Not specified");
+
+                            jobs.add(new Job(id, title, companyName, wage, location, description, recruiterId));
+                        }
+
+                        // Update adapter with real data
+                        if (adapter == null) {
+                            adapter = new CardStackAdapter(jobs);
+                            cardStackView.setAdapter(adapter);
+                            setupButtonListeners();
+                        } else {
+                            // Update existing adapter
+                            adapter = new CardStackAdapter(jobs);
+                            cardStackView.setAdapter(adapter);
+                            setupButtonListeners();
+                        }
+
+                        // Show/hide empty state
+                        if (jobs.isEmpty()) {
+                            cardStackView.setVisibility(View.GONE);
+                            emptyStateLayout.setVisibility(View.VISIBLE);
+                        } else {
+                            cardStackView.setVisibility(View.VISIBLE);
+                            emptyStateLayout.setVisibility(View.GONE);
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Toast.makeText(getContext(), "Error loading jobs", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                error -> {
+                    error.printStackTrace();
+                    Toast.makeText(getContext(), "Failed to load jobs", Toast.LENGTH_SHORT).show();
+                }
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        ApiClient.getRequestQueue(requireContext()).add(request);
+    }
+
+    private void setupButtonListeners() {
+        if (adapter == null) return;
+        
         adapter.setOnButtonClickListener(new CardStackAdapter.OnButtonClickListener() {
             @Override
             public void onNotNowClicked() {
@@ -110,14 +196,6 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         cardStackView.swipe();
     }
 
-    private List<Job> createDummyJobs() {
-        List<Job> jobs = new ArrayList<>();
-        jobs.add(new Job("job101", "Barista", "Campus Coffee", "RM15/hr", "Student Union", "Make coffee.", "rec1"));
-        jobs.add(new Job("job102", "Library Assistant", "Main Library", "RM14/hr", "Central", "Sort books.", "rec2"));
-        jobs.add(new Job("job103", "IT Help Desk", "Tech Services", "RM18/hr", "Science Hall", "Fix PCs.", "rec3"));
-        return jobs;
-    }
-
     @Override
     public void onCardDragging(Direction direction, float ratio) {
         View topView = layoutManager.getTopView();
@@ -146,6 +224,7 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
 
     @Override
     public void onCardSwiped(Direction direction) {
+        if (adapter == null) return;
         int position = layoutManager.getTopPosition() - 1;
         if (position < 0 || position >= adapter.getItemCount()) return;
 
