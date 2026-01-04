@@ -147,9 +147,6 @@ public class ChatFragment extends Fragment {
                                 }
                             }
                             
-                            // Fetch user data for all students and recruiters
-                            fetchUserDataAndUpdateChats(tempChatList, studentIds, recruiterIds);
-
                             // If no chats found, show example chats
                             if (tempChatList.isEmpty()) {
                                 adapter.updateData(getExampleChats());
@@ -263,5 +260,112 @@ public class ChatFragment extends Fragment {
         ));
         
         return exampleChats;
+    }
+    
+    private void fetchUserDataAndUpdateChats(ArrayList<ChatModel> chatList, ArrayList<String> studentIds, ArrayList<String> recruiterIds) {
+        // Create a map to store user data
+        java.util.Map<String, UserInfo> userInfoMap = new java.util.HashMap<>();
+        
+        // Fetch all unique user IDs
+        java.util.Set<String> allUserIds = new java.util.HashSet<>();
+        allUserIds.addAll(studentIds);
+        allUserIds.addAll(recruiterIds);
+        
+        if (allUserIds.isEmpty()) {
+            // No users to fetch, just update adapter
+            adapter.updateData(chatList);
+            return;
+        }
+        
+        // Build query to fetch all users at once
+        try {
+            StringBuilder userIdsQuery = new StringBuilder();
+            for (String userId : allUserIds) {
+                if (userIdsQuery.length() > 0) {
+                    userIdsQuery.append(",");
+                }
+                userIdsQuery.append(URLEncoder.encode(userId, "UTF-8"));
+            }
+            
+            String usersUrl = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/users?select=id,name,bio&id=in.(" + userIdsQuery.toString() + ")";
+            
+            JsonArrayRequest usersRequest = new JsonArrayRequest(
+                    Request.Method.GET,
+                    usersUrl,
+                    null,
+                    usersResponse -> {
+                        try {
+                            // Parse user data
+                            for (int i = 0; i < usersResponse.length(); i++) {
+                                JSONObject userObj = usersResponse.getJSONObject(i);
+                                String userId = userObj.optString("id", "");
+                                String name = userObj.optString("name", "");
+                                String bio = userObj.optString("bio", "");
+                                
+                                userInfoMap.put(userId, new UserInfo(name, bio));
+                            }
+                            
+                            // Update chat models with user data
+                            for (ChatModel chat : chatList) {
+                                UserInfo studentInfo = userInfoMap.get(chat.getStudentId());
+                                if (studentInfo != null) {
+                                    chat.setStudentName(studentInfo.name);
+                                    chat.setStudentBio(studentInfo.bio);
+                                } else {
+                                    chat.setStudentName("Student");
+                                    chat.setStudentBio("");
+                                }
+                                
+                                UserInfo recruiterInfo = userInfoMap.get(chat.getRecruiterId());
+                                if (recruiterInfo != null) {
+                                    chat.setRecruiterName(recruiterInfo.name);
+                                } else {
+                                    chat.setRecruiterName("Recruiter");
+                                }
+                            }
+                            
+                            // Update adapter with complete data
+                            adapter.updateData(chatList);
+                            
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // On error, still show chats without user data
+                            adapter.updateData(chatList);
+                        }
+                    },
+                    error -> {
+                        // On error, still show chats without user data
+                        adapter.updateData(chatList);
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+            
+            ApiClient.getRequestQueue(requireContext()).add(usersRequest);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            // On error, still show chats without user data
+            adapter.updateData(chatList);
+        }
+    }
+    
+    // Helper class to store user info
+    private static class UserInfo {
+        String name;
+        String bio;
+        
+        UserInfo(String name, String bio) {
+            this.name = name;
+            this.bio = bio;
+        }
     }
 }
