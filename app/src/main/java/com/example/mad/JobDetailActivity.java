@@ -114,8 +114,23 @@ public class JobDetailActivity extends AppCompatActivity {
     }
 
     private void onApplyButtonClicked() {
+        // CRITICAL: Early return if already applied (defensive check)
+        if (hasApplied) {
+            Toast.makeText(this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // CRITICAL: Disable button immediately to prevent double-clicks
+        btnApply.setEnabled(false);
+        btnApply.setText("Checking...");
+        
         // Critical: Check for duplicate application BEFORE showing dialog
         checkForDuplicateApplication(() -> {
+            // Re-enable button if check passes (user can apply)
+            runOnUiThread(() -> {
+                btnApply.setEnabled(true);
+                btnApply.setText("Interested");
+            });
             // This callback runs if no duplicate exists
             showPitchDialog();
         });
@@ -124,21 +139,31 @@ public class JobDetailActivity extends AppCompatActivity {
     private void checkForDuplicateApplication(Runnable onNoDuplicate) {
         if (currentJobId == null || currentUserId == null) {
             Toast.makeText(this, "Invalid job or user data", Toast.LENGTH_SHORT).show();
+            // Re-enable button if data is invalid
+            runOnUiThread(() -> {
+                btnApply.setEnabled(true);
+                btnApply.setText("Interested");
+            });
             return;
         }
 
         // Use snake_case column names: student_id and job_id
         checkIfApplied(currentUserId, currentJobId, (hasApplied, error) -> {
             if (error != null) {
-                // Log error but allow user to proceed
+                // Log error but allow user to proceed (with warning)
                 android.util.Log.e("JobDetailActivity", "Error checking application: " + error);
-                Toast.makeText(this, "Could not verify application status. You can still apply.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(JobDetailActivity.this, "Could not verify application status. You can still apply.", Toast.LENGTH_SHORT).show();
+                // Re-enable button if check failed
+                runOnUiThread(() -> {
+                    btnApply.setEnabled(true);
+                    btnApply.setText("Interested");
+                });
                 onNoDuplicate.run();
                 return;
             }
             
             if (hasApplied) {
-                // Already applied - disable button
+                // Already applied - disable button permanently
                 runOnUiThread(() -> {
                     Toast.makeText(JobDetailActivity.this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
                     btnApply.setText("Applied");
@@ -180,10 +205,25 @@ public class JobDetailActivity extends AppCompatActivity {
     }
 
     private void saveApplication(String initialMessage) {
-        if (currentJobId == null || currentUserId == null || recruiterId == null) {
-            Toast.makeText(this, "Invalid data", Toast.LENGTH_SHORT).show();
+        // CRITICAL: Prevent duplicate submission
+        if (hasApplied) {
+            Toast.makeText(this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
             return;
         }
+        
+        if (currentJobId == null || currentUserId == null || recruiterId == null) {
+            Toast.makeText(this, "Invalid data", Toast.LENGTH_SHORT).show();
+            // Re-enable button if data is invalid
+            runOnUiThread(() -> {
+                btnApply.setEnabled(true);
+                btnApply.setText("Interested");
+            });
+            return;
+        }
+        
+        // Disable button during submission to prevent double-submission
+        btnApply.setEnabled(false);
+        btnApply.setText("Submitting...");
 
         // Get student name from SharedPreferences
         SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
@@ -200,22 +240,48 @@ public class JobDetailActivity extends AppCompatActivity {
                 Request.Method.POST,
                 url,
                 response -> {
-                    // Success - update UI
-                    Toast.makeText(JobDetailActivity.this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
-                    btnApply.setText("Applied");
-                    btnApply.setEnabled(false);
-                    JobDetailActivity.this.hasApplied = true;
+                    // Success - update UI and set flag
+                    runOnUiThread(() -> {
+                        Toast.makeText(JobDetailActivity.this, "Application submitted successfully!", Toast.LENGTH_SHORT).show();
+                        btnApply.setText("Applied");
+                        btnApply.setEnabled(false);
+                        JobDetailActivity.this.hasApplied = true;
+                    });
+                    android.util.Log.d("JobDetailActivity", "✅ Application saved successfully");
                 },
                 error -> {
                     String responseBody = null;
-                    if (error.networkResponse != null && error.networkResponse.data != null) {
-                        try {
-                            responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    int statusCode = -1;
+                    if (error.networkResponse != null) {
+                        statusCode = error.networkResponse.statusCode;
+                        if (error.networkResponse.data != null) {
+                            try {
+                                responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
-                    Toast.makeText(this, "Failed to submit application", Toast.LENGTH_SHORT).show();
+                    
+                    android.util.Log.e("JobDetailActivity", "❌ Failed to submit application. HTTP: " + statusCode);
+                    android.util.Log.e("JobDetailActivity", "❌ Error body: " + responseBody);
+                    
+                    // Check if error is due to duplicate (unique constraint violation)
+                    if (statusCode == 409 || (responseBody != null && responseBody.contains("duplicate") || responseBody.contains("unique"))) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(JobDetailActivity.this, "You have already applied to this job", Toast.LENGTH_SHORT).show();
+                            btnApply.setText("Applied");
+                            btnApply.setEnabled(false);
+                            JobDetailActivity.this.hasApplied = true;
+                        });
+                    } else {
+                        // Re-enable button on error (user can try again)
+                        runOnUiThread(() -> {
+                            Toast.makeText(JobDetailActivity.this, "Failed to submit application. Please try again.", Toast.LENGTH_SHORT).show();
+                            btnApply.setEnabled(true);
+                            btnApply.setText("Interested");
+                        });
+                    }
                 }
         ) {
             @Override
