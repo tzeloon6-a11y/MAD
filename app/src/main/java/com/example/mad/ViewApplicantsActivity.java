@@ -126,11 +126,8 @@ public class ViewApplicantsActivity extends AppCompatActivity {
                             applicantList.add(application);
                         }
 
-                        // Update adapter with new data
-                        adapter.updateData(applicantList);
-                        
-                        // Check for existing chats after loading applicants
-                        adapter.refreshChatStatuses();
+                        // Fetch user personal information for all applicants
+                        fetchUserPersonalInfo(applicantList);
 
                         if (applicantList.isEmpty()) {
                             Toast.makeText(this, "No applicants found for this job.", Toast.LENGTH_SHORT).show();
@@ -161,6 +158,119 @@ public class ViewApplicantsActivity extends AppCompatActivity {
         };
 
         ApiClient.getRequestQueue(this).add(request);
+    }
+    
+    private void fetchUserPersonalInfo(List<ApplicationModel> applications) {
+        if (applications == null || applications.isEmpty()) {
+            adapter.updateData(applications);
+            adapter.refreshChatStatuses();
+            return;
+        }
+        
+        // Collect all unique student IDs
+        java.util.Set<String> studentIds = new java.util.HashSet<>();
+        for (ApplicationModel app : applications) {
+            if (app.getStudentId() != null && !app.getStudentId().isEmpty()) {
+                studentIds.add(app.getStudentId());
+            }
+        }
+        
+        if (studentIds.isEmpty()) {
+            adapter.updateData(applications);
+            adapter.refreshChatStatuses();
+            return;
+        }
+        
+        // Build query to fetch all user data at once
+        try {
+            StringBuilder userIdsQuery = new StringBuilder();
+            for (String userId : studentIds) {
+                if (userIdsQuery.length() > 0) {
+                    userIdsQuery.append(",");
+                }
+                userIdsQuery.append(java.net.URLEncoder.encode(userId, "UTF-8"));
+            }
+            
+            String usersUrl = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/users?select=id,name,email,phone,bio,resume_url&id=in.(" + userIdsQuery.toString() + ")";
+            
+            JsonArrayRequest usersRequest = new JsonArrayRequest(
+                    Request.Method.GET,
+                    usersUrl,
+                    null,
+                    response -> {
+                        try {
+                            // Create map of user data
+                            java.util.Map<String, UserPersonalInfo> userInfoMap = new java.util.HashMap<>();
+                            
+                            for (int i = 0; i < response.length(); i++) {
+                                org.json.JSONObject userObj = response.getJSONObject(i);
+                                String userId = userObj.optString("id", "");
+                                String email = userObj.optString("email", "");
+                                String phone = userObj.optString("phone", "");
+                                String bio = userObj.optString("bio", "");
+                                String resumeUrl = userObj.optString("resume_url", "");
+                                
+                                userInfoMap.put(userId, new UserPersonalInfo(email, phone, bio, resumeUrl));
+                            }
+                            
+                            // Update applications with user personal info
+                            for (ApplicationModel app : applications) {
+                                UserPersonalInfo info = userInfoMap.get(app.getStudentId());
+                                if (info != null) {
+                                    app.setStudentEmail(info.email);
+                                    app.setStudentPhone(info.phone);
+                                    app.setStudentBio(info.bio);
+                                    app.setStudentResumeUrl(info.resumeUrl);
+                                }
+                            }
+                            
+                            // Update adapter with complete data
+                            adapter.updateData(applications);
+                            adapter.refreshChatStatuses();
+                            
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // On error, still show applicants without personal info
+                            adapter.updateData(applications);
+                            adapter.refreshChatStatuses();
+                        }
+                    },
+                    error -> {
+                        // On error, still show applicants without personal info
+                        adapter.updateData(applications);
+                        adapter.refreshChatStatuses();
+                    }
+            ) {
+                @Override
+                public java.util.Map<String, String> getHeaders() {
+                    return ApiClient.getHeaders();
+                }
+            };
+            
+            ApiClient.getRequestQueue(this).add(usersRequest);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            // On error, still show applicants without personal info
+            adapter.updateData(applications);
+            adapter.refreshChatStatuses();
+        }
+    }
+    
+    // Helper class to store user personal info
+    private static class UserPersonalInfo {
+        String email;
+        String phone;
+        String bio;
+        String resumeUrl;
+        
+        UserPersonalInfo(String email, String phone, String bio, String resumeUrl) {
+            this.email = email;
+            this.phone = phone;
+            this.bio = bio;
+            this.resumeUrl = resumeUrl;
+        }
     }
     
     @Override

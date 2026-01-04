@@ -21,6 +21,41 @@
             android:textSize="18sp"
             android:textColor="@color/classic_text_primary" />
 
+        <!-- Student Email -->
+        <TextView
+            android:id="@+id/tv_student_email"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email: student@example.com"
+            android:textSize="12sp"
+            android:textColor="@color/classic_text_secondary"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <!-- Student Phone -->
+        <TextView
+            android:id="@+id/tv_student_phone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Phone: +1234567890"
+            android:textSize="12sp"
+            android:textColor="@color/classic_text_secondary"
+            android:layout_marginTop="2dp"
+            android:visibility="gone" />
+
+        <!-- Student Bio -->
+        <TextView
+            android:id="@+id/tv_student_bio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bio: Student bio information..."
+            android:textSize="12sp"
+            android:textColor="@color/classic_text_secondary"
+            android:layout_marginTop="4dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:visibility="gone" />
+
         <!-- Initial Message (Pitch) -->
         <TextView
             android:id="@+id/tv_initial_message"
@@ -33,20 +68,43 @@
             android:maxLines="3"
             android:ellipsize="end" />
 
-        <!-- Start Chat Button -->
-        <Button
-            android:id="@+id/btn_start_chat"
-            android:layout_width="wrap_content"
+        <!-- Button Container -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
+            android:orientation="horizontal"
             android:layout_marginTop="12dp"
-            android:minHeight="40dp"
-            android:minWidth="120dp"
-            android:text="Start Chat"
-            android:backgroundTint="@color/app_blue"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:gravity="end">
+
+            <!-- View Resume Button -->
+            <Button
+                android:id="@+id/btn_view_resume"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:minHeight="40dp"
+                android:minWidth="100dp"
+                android:text="View Resume"
+                android:backgroundTint="@color/classic_text_secondary"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Start Chat Button -->
+            <Button
+                android:id="@+id/btn_start_chat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:minWidth="120dp"
+                android:text="Start Chat"
+                android:backgroundTint="@color/app_blue"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

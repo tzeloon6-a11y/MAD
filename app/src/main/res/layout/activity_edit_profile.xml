@@ -47,7 +47,36 @@
             android:gravity="top"
             android:padding="12dp"
             android:inputType="textMultiLine"
-            android:layout_marginBottom="32dp"/>
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Resume Upload Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resume (Optional)"
+            android:textColor="@color/classic_text_secondary"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btn_upload_resume"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Upload Resume (PDF, JPEG, PNG)"
+            android:backgroundTint="@color/classic_text_secondary"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tv_resume_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@color/app_blue"
+            android:layout_marginBottom="32dp"
+            android:visibility="gone"/>
 
         <Button
             android:id="@+id/btn_save_profile"

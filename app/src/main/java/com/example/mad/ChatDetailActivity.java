@@ -35,10 +35,14 @@ public class ChatDetailActivity extends AppCompatActivity {
     private EditText etMessageInput;
     private Button btnSend;
     private TextView tvChatHeader;
+    private android.widget.ImageView ivInfoIcon;
 
     private MessageAdapter adapter;
     private String chatId;
     private String currentUserId;
+    private String currentUserRole;
+    private String studentId;
+    private String recruiterId;
     private Handler messagePollHandler;
     private Runnable messagePollRunnable;
     private static final long POLL_INTERVAL = 2000; // Poll every 2 seconds
@@ -56,9 +60,10 @@ public class ChatDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Get current user ID
+        // Get current user ID and role
         SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
         currentUserId = prefs.getString(LoginActivity.KEY_USER_ID, null);
+        currentUserRole = prefs.getString(LoginActivity.KEY_ROLE, null);
         if (currentUserId == null) {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
             finish();
@@ -70,11 +75,15 @@ public class ChatDetailActivity extends AppCompatActivity {
         etMessageInput = findViewById(R.id.et_message_input);
         btnSend = findViewById(R.id.btn_send);
         tvChatHeader = findViewById(R.id.tv_chat_header);
+        ivInfoIcon = findViewById(R.id.iv_info_icon);
 
         // Setup RecyclerView
         recyclerMessages.setLayoutManager(new LinearLayoutManager(this));
         adapter = new MessageAdapter(new ArrayList<>(), currentUserId);
         recyclerMessages.setAdapter(adapter);
+
+        // Load chat data to get student_id and recruiter_id
+        loadChatData();
 
         // Load initial messages
         loadMessages();
@@ -84,6 +93,73 @@ public class ChatDetailActivity extends AppCompatActivity {
 
         // Setup real-time polling
         setupMessagePolling();
+    }
+    
+    private void loadChatData() {
+        try {
+            String url = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/chats?select=student_id,recruiter_id,job_title&chat_id=eq." + chatId
+                    + "&limit=1";
+
+            JsonArrayRequest request = new JsonArrayRequest(
+                    Request.Method.GET,
+                    url,
+                    null,
+                    response -> {
+                        try {
+                            if (response.length() > 0) {
+                                JSONObject chatObj = response.getJSONObject(0);
+                                studentId = chatObj.optString("student_id", "");
+                                recruiterId = chatObj.optString("recruiter_id", "");
+                                String jobTitle = chatObj.optString("job_title", "");
+                                
+                                // Update header with job title
+                                if (jobTitle != null && !jobTitle.isEmpty()) {
+                                    tvChatHeader.setText(jobTitle);
+                                }
+                                
+                                // Show info icon only if current user is recruiter
+                                if ("recruiter".equalsIgnoreCase(currentUserRole) && 
+                                    currentUserId != null && currentUserId.equals(recruiterId) &&
+                                    studentId != null && !studentId.isEmpty()) {
+                                    ivInfoIcon.setVisibility(View.VISIBLE);
+                                    ivInfoIcon.setOnClickListener(v -> showStudentProfile());
+                                } else {
+                                    ivInfoIcon.setVisibility(View.GONE);
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    },
+                    error -> {
+                        // Silent fail - info icon will just be hidden
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+
+            ApiClient.getRequestQueue(this).add(request);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void showStudentProfile() {
+        if (studentId != null && !studentId.isEmpty()) {
+            StudentProfileBottomSheet bottomSheet = StudentProfileBottomSheet.newInstance(studentId);
+            bottomSheet.show(getSupportFragmentManager(), "StudentProfileBottomSheet");
+        } else {
+            Toast.makeText(this, "Student information not available", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupMessagePolling() {

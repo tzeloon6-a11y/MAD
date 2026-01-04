@@ -10,6 +10,10 @@ public class ApplicationModel {
     private String status;
     private String initialMessage;
     private String timestamp;
+    private String studentEmail;
+    private String studentPhone;
+    private String studentBio;
+    private String studentResumeUrl;
 
     public ApplicationModel(String applicationId, String studentId, String studentName,
                             String recruiterId, String jobId, String status,
@@ -54,6 +58,38 @@ public class ApplicationModel {
 
     public String getTimestamp() {
         return timestamp;
+    }
+    
+    public String getStudentEmail() {
+        return studentEmail;
+    }
+    
+    public void setStudentEmail(String studentEmail) {
+        this.studentEmail = studentEmail;
+    }
+    
+    public String getStudentPhone() {
+        return studentPhone;
+    }
+    
+    public void setStudentPhone(String studentPhone) {
+        this.studentPhone = studentPhone;
+    }
+    
+    public String getStudentBio() {
+        return studentBio;
+    }
+    
+    public void setStudentBio(String studentBio) {
+        this.studentBio = studentBio;
+    }
+    
+    public String getStudentResumeUrl() {
+        return studentResumeUrl;
+    }
+    
+    public void setStudentResumeUrl(String studentResumeUrl) {
+        this.studentResumeUrl = studentResumeUrl;
     }
 }
 

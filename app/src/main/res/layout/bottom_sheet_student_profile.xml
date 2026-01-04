@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/white">
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Profile"
+        android:textColor="@color/app_blue"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"
+        android:gravity="center" />
+
+    <!-- Name -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Name:"
+        android:textStyle="bold"
+        android:textColor="@color/classic_text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tv_profile_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student Name"
+        android:textColor="@color/classic_text_primary"
+        android:textSize="16sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Email -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Email:"
+        android:textStyle="bold"
+        android:textColor="@color/classic_text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tv_profile_email"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="student@example.com"
+        android:textColor="@color/classic_text_secondary"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Phone -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Phone:"
+        android:textStyle="bold"
+        android:textColor="@color/classic_text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tv_profile_phone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="+1234567890"
+        android:textColor="@color/classic_text_secondary"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Bio -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bio:"
+        android:textStyle="bold"
+        android:textColor="@color/classic_text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tv_profile_bio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Student bio information..."
+        android:textColor="@color/classic_text_secondary"
+        android:textSize="14sp"
+        android:layout_marginBottom="24dp"
+        android:maxLines="5"
+        android:ellipsize="end" />
+
+    <!-- View Resume Button -->
+    <Button
+        android:id="@+id/btn_view_resume"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="View Resume"
+        android:backgroundTint="@color/app_blue"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+</LinearLayout>
+

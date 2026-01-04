@@ -2,6 +2,7 @@ package com.example.mad;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -130,12 +131,52 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         // Set student name
         holder.tvStudentName.setText(application.getStudentName());
         
+        // Set personal information
+        if (holder.tvStudentEmail != null) {
+            String email = application.getStudentEmail();
+            if (email != null && !email.isEmpty()) {
+                holder.tvStudentEmail.setText("Email: " + email);
+                holder.tvStudentEmail.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvStudentEmail.setVisibility(View.GONE);
+            }
+        }
+        
+        if (holder.tvStudentPhone != null) {
+            String phone = application.getStudentPhone();
+            if (phone != null && !phone.isEmpty()) {
+                holder.tvStudentPhone.setText("Phone: " + phone);
+                holder.tvStudentPhone.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvStudentPhone.setVisibility(View.GONE);
+            }
+        }
+        
+        if (holder.tvStudentBio != null) {
+            String bio = application.getStudentBio();
+            if (bio != null && !bio.isEmpty()) {
+                holder.tvStudentBio.setText("Bio: " + bio);
+                holder.tvStudentBio.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvStudentBio.setVisibility(View.GONE);
+            }
+        }
+        
         // Set initial message (pitch)
         String message = application.getInitialMessage();
         if (message != null && message.length() > 100) {
             message = message.substring(0, 97) + "...";
         }
         holder.tvInitialMessage.setText(message != null ? message : "No message provided");
+        
+        // Handle View Resume button
+        String resumeUrl = application.getStudentResumeUrl();
+        if (resumeUrl != null && !resumeUrl.isEmpty()) {
+            holder.btnViewResume.setVisibility(View.VISIBLE);
+            holder.btnViewResume.setOnClickListener(v -> viewResume(holder.itemView.getContext(), resumeUrl));
+        } else {
+            holder.btnViewResume.setVisibility(View.GONE);
+        }
         
         // Check if chat exists for this application
         String applicationId = application.getApplicationId();
@@ -499,17 +540,46 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         intent.putExtra("chatId", chatId);
         context.startActivity(intent);
     }
+    
+    private void viewResume(Context context, String resumeUrl) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(resumeUrl));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            
+            // Verify that there's an app to handle this intent
+            if (intent.resolveActivity(context.getPackageManager()) != null) {
+                context.startActivity(intent);
+            } else {
+                Toast.makeText(context, "No app available to view resume", Toast.LENGTH_SHORT).show();
+            }
+        } catch (android.content.ActivityNotFoundException e) {
+            // Handle case where no app can handle the intent
+            Toast.makeText(context, "No app available to view resume", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(context, "Error opening resume", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     static class ApplicantViewHolder extends RecyclerView.ViewHolder {
         TextView tvStudentName;
+        TextView tvStudentEmail;
+        TextView tvStudentPhone;
+        TextView tvStudentBio;
         TextView tvInitialMessage;
         Button btnStartChat;
+        Button btnViewResume;
 
         public ApplicantViewHolder(@NonNull View itemView) {
             super(itemView);
             tvStudentName = itemView.findViewById(R.id.tv_student_name);
+            tvStudentEmail = itemView.findViewById(R.id.tv_student_email);
+            tvStudentPhone = itemView.findViewById(R.id.tv_student_phone);
+            tvStudentBio = itemView.findViewById(R.id.tv_student_bio);
             tvInitialMessage = itemView.findViewById(R.id.tv_initial_message);
             btnStartChat = itemView.findViewById(R.id.btn_start_chat);
+            btnViewResume = itemView.findViewById(R.id.btn_view_resume);
         }
     }
 }
