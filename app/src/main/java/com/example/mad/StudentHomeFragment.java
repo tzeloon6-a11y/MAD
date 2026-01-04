@@ -202,21 +202,7 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         adapter.setOnButtonClickListener(new CardStackAdapter.OnButtonClickListener() {
             @Override
             public void onNotNowClicked() {
-                if (adapter == null || adapter.getItemCount() == 0) return;
-                
-                // Get the top job
-                int topPosition = layoutManager.getTopPosition();
-                if (topPosition < 0 || topPosition >= adapter.getItemCount()) return;
-                
-                Job currentJob = adapter.getItems().get(topPosition);
-                String jobId = currentJob.getJobId();
-                
-                // Don't allow swiping if already applied
-                if (appliedJobs.containsKey(jobId) && appliedJobs.get(jobId)) {
-                    Toast.makeText(requireContext(), "You have already applied to this job", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
+                // "Not Now" should always work, even for applied jobs, so students can swipe away to see other jobs
                 View topCard = layoutManager.getTopView();
                 if (topCard != null) {
                     animateButton(topCard.findViewById(R.id.not_now_button));
@@ -334,17 +320,17 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
             return;
         }
         
-        // Disable button on current card
+        // Update button state on current card
         View topCard = layoutManager.getTopView();
         if (topCard != null) {
             MaterialButton interestedButton = topCard.findViewById(R.id.interested_button);
             if (interestedButton != null) {
                 interestedButton.setText("Applied");
                 interestedButton.setEnabled(false);
-                // Disable other buttons too
+                // Disable Save button, but keep Not Now enabled so students can swipe away
                 MaterialButton notNowButton = topCard.findViewById(R.id.not_now_button);
                 MaterialButton saveButton = topCard.findViewById(R.id.save_button);
-                if (notNowButton != null) notNowButton.setEnabled(false);
+                // Not Now stays enabled - don't disable it
                 if (saveButton != null) saveButton.setEnabled(false);
             }
         }
@@ -461,8 +447,9 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                         interestedButton.setText("Applied");
                         interestedButton.setEnabled(false);
                     }
+                    // Not Now button stays enabled so students can swipe away to see other jobs
                     if (notNowButton != null) {
-                        notNowButton.setEnabled(false);
+                        notNowButton.setEnabled(true);
                     }
                     if (saveButton != null) {
                         saveButton.setEnabled(false);
@@ -596,19 +583,20 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
             MaterialButton saveButton = view.findViewById(R.id.save_button);
             
             if (appliedJobs.containsKey(jobId) && appliedJobs.get(jobId)) {
-                // Already applied - disable all buttons
+                // Already applied - disable Interested and Save buttons, but keep Not Now enabled
                 if (interestedButton != null) {
                     interestedButton.setText("Applied");
                     interestedButton.setEnabled(false);
                 }
+                // Not Now button stays enabled so students can swipe away to see other jobs
                 if (notNowButton != null) {
-                    notNowButton.setEnabled(false);
+                    notNowButton.setEnabled(true);
                 }
                 if (saveButton != null) {
                     saveButton.setEnabled(false);
                 }
             } else {
-                // Not applied - enable buttons
+                // Not applied - enable all buttons
                 if (interestedButton != null) {
                     interestedButton.setText("Interested");
                     interestedButton.setEnabled(true);
