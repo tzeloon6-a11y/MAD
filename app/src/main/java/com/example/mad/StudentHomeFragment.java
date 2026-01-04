@@ -28,7 +28,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 public class StudentHomeFragment extends Fragment implements CardStackListener {
+    
+    // Helper class to sort jobs by created_at
+    private static class JobWithDate {
+        Job job;
+        String createdAt;
+        
+        JobWithDate(Job job, String createdAt) {
+            this.job = job;
+            this.createdAt = createdAt;
+        }
+    }
     private CardStackLayoutManager layoutManager;
     private CardStackAdapter adapter;
     private CardStackView cardStackView;
@@ -82,7 +94,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                 null,
                 response -> {
                     try {
-                        List<Job> jobs = new ArrayList<>();
+                        // Temporary list to store jobs with their created_at dates for sorting
+                        List<JobWithDate> jobsWithDates = new ArrayList<>();
 
                         for (int i = 0; i < response.length(); i++) {
                             JSONObject obj = response.getJSONObject(i);
@@ -91,6 +104,7 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                             String title = obj.optString("title", "No Title");
                             String description = obj.optString("description", obj.optString("content", "No description available."));
                             String recruiterId = obj.optString("user_id", "");
+                            String createdAt = obj.optString("created_at", "");
                             
                             // Map Supabase data to Job model
                             // Note: job_posts table might not have companyName, wage, location
@@ -99,7 +113,23 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                             String wage = obj.optString("wage", "Not specified");
                             String location = obj.optString("location", "Not specified");
 
-                            jobs.add(new Job(id, title, companyName, wage, location, description, recruiterId));
+                            Job job = new Job(id, title, companyName, wage, location, description, recruiterId);
+                            jobsWithDates.add(new JobWithDate(job, createdAt));
+                        }
+                        
+                        // Sort by created_at descending (newest first) as fallback
+                        jobsWithDates.sort((a, b) -> {
+                            String dateA = a.createdAt;
+                            String dateB = b.createdAt;
+                            if (dateA == null || dateB == null) return 0;
+                            // Compare dates (newest first = descending order)
+                            return dateB.compareTo(dateA);
+                        });
+                        
+                        // Extract sorted jobs
+                        List<Job> jobs = new ArrayList<>();
+                        for (JobWithDate jobWithDate : jobsWithDates) {
+                            jobs.add(jobWithDate.job);
                         }
 
                         // Update adapter with real data

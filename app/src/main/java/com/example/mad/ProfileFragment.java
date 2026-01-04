@@ -125,33 +125,58 @@ public class ProfileFragment extends Fragment {
         String userId = prefs.getString(LoginActivity.KEY_USER_ID, null);
         if (userId == null) return;
 
-        // Order by created_at descending to show newest posts first
-        String url = SupabaseConfig.SUPABASE_URL 
-                + "/rest/v1/experience_posts?user_id=eq." + userId 
-                + "&select=*"
-                + "&order=created_at.desc";
+        try {
+            // URL encode userId to handle special characters
+            String encodedUserId = java.net.URLEncoder.encode(userId, "UTF-8");
+            
+            // Order by created_at descending to show newest posts first
+            String url = SupabaseConfig.SUPABASE_URL 
+                    + "/rest/v1/experience_posts?user_id=eq." + encodedUserId 
+                    + "&select=*"
+                    + "&order=created_at.desc";
 
-        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
-                response -> {
-                    try {
-                        ArrayList<ExperiencePostItem> list = new ArrayList<>();
-                        for (int i = 0; i < response.length(); i++) {
-                            JSONObject obj = response.getJSONObject(i);
-                            list.add(new ExperiencePostItem(
-                                    obj.getString("id"), obj.getString("user_id"),
-                                    obj.getString("title"), obj.optString("description", ""),
-                                    obj.optString("media_url", ""), obj.optString("media_type", ""),
-                                    obj.getString("created_at")
-                            ));
+            JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
+                    response -> {
+                        try {
+                            ArrayList<ExperiencePostItem> list = new ArrayList<>();
+                            for (int i = 0; i < response.length(); i++) {
+                                JSONObject obj = response.getJSONObject(i);
+                                list.add(new ExperiencePostItem(
+                                        obj.getString("id"), obj.getString("user_id"),
+                                        obj.getString("title"), obj.optString("description", ""),
+                                        obj.optString("media_url", ""), obj.optString("media_type", ""),
+                                        obj.getString("created_at")
+                                ));
+                            }
+                            
+                            // Fallback: Sort by created_at descending if API ordering didn't work
+                            // This ensures newest posts are always on top
+                            list.sort((a, b) -> {
+                                String dateA = a.getCreatedAt();
+                                String dateB = b.getCreatedAt();
+                                if (dateA == null || dateB == null) return 0;
+                                // Compare dates (newest first = descending order)
+                                return dateB.compareTo(dateA);
+                            });
+                            
+                            adapter.updateData(list);
+                        } catch (JSONException e) { 
+                            e.printStackTrace(); 
+                            Toast.makeText(getContext(), "Error parsing posts", Toast.LENGTH_SHORT).show();
                         }
-                        adapter.updateData(list);
-                    } catch (JSONException e) { e.printStackTrace(); }
-                },
-                error -> Toast.makeText(getContext(), "Failed to load posts", Toast.LENGTH_SHORT).show()
-        ) {
-            @Override
-            public Map<String, String> getHeaders() { return ApiClient.getHeaders(); }
-        };
-        ApiClient.getRequestQueue(requireContext()).add(request);
+                    },
+                    error -> {
+                        error.printStackTrace();
+                        Toast.makeText(getContext(), "Failed to load posts", Toast.LENGTH_SHORT).show();
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() { return ApiClient.getHeaders(); }
+            };
+            ApiClient.getRequestQueue(requireContext()).add(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Error loading posts", Toast.LENGTH_SHORT).show();
+        }
     }
 }
