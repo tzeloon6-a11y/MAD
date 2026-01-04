@@ -56,6 +56,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
     private CardStackView cardStackView;
     private LinearLayout emptyStateLayout;
     private View swipedCardView;
+    private String currentUserId;
+    private Map<String, Boolean> appliedJobs = new HashMap<>(); // Track which jobs have been applied to
 
     @Nullable
     @Override
