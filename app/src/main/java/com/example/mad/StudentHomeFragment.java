@@ -131,9 +131,16 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         // Filter out applied jobs from allJobsList
         List<Job> availableJobs = new ArrayList<>();
         for (Job job : allJobsList) {
-            if (!appliedJobs.containsKey(job.getJobId()) || !appliedJobs.get(job.getJobId())) {
+            // Only include jobs that are NOT in the appliedJobs map, or if they are, they must be false
+            String jobId = job.getJobId();
+            if (!appliedJobs.containsKey(jobId)) {
+                // Not applied - include it
+                availableJobs.add(job);
+            } else if (appliedJobs.containsKey(jobId) && !appliedJobs.get(jobId)) {
+                // Explicitly marked as not applied - include it
                 availableJobs.add(job);
             }
+            // If appliedJobs.get(jobId) is true, we skip it (don't add to availableJobs)
         }
         
         // Update adapter with filtered jobs
@@ -171,9 +178,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
     public void onResume() {
         super.onResume();
         // Reload jobs when returning to this fragment (e.g., after posting a new job)
-        // Also reload applied jobs status
+        // Applied jobs will be loaded as part of loadJobsFromSupabase()
         loadJobsFromSupabase();
-        checkAppliedJobs();
     }
 
     private void setupCardStackView() {
@@ -241,18 +247,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                             allJobsList.add(jobWithDate.job);
                         }
 
-                        // Update applied jobs list based on appliedJobs map
-                        updateAppliedJobsList();
-                        
-                        // Check which jobs have been applied to
-                        checkAppliedJobs();
-                        
-                        // Show the appropriate tab (this will handle empty state)
-                        if (isShowingAppliedTab) {
-                            showAppliedJobsTab();
-                        } else {
-                            showAllJobsTab();
-                        }
+                        // Load applied jobs first, then show the appropriate tab
+                        loadAppliedJobsAndShowTab();
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -509,13 +505,110 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         ApiClient.getRequestQueue(requireContext()).add(request);
     }
     
+    private void loadAppliedJobsAndShowTab() {
+        if (currentUserId == null || allJobsList.isEmpty()) {
+            // No user or no jobs, just show the tab
+            if (isShowingAppliedTab) {
+                showAppliedJobsTab();
+            } else {
+                showAllJobsTab();
+            }
+            return;
+        }
+        
+        // Load all applied jobs for this user in one query
+        try {
+            String encodedUserId = java.net.URLEncoder.encode(currentUserId, "UTF-8");
+            String url = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/applications?student_id=eq." + encodedUserId
+                    + "&select=job_id";
+            
+            JsonArrayRequest request = new JsonArrayRequest(
+                    Request.Method.GET,
+                    url,
+                    null,
+                    response -> {
+                        try {
+                            // Clear and rebuild appliedJobs map
+                            appliedJobs.clear();
+                            appliedJobsList.clear();
+                            
+                            // Extract all applied job IDs
+                            for (int i = 0; i < response.length(); i++) {
+                                JSONObject obj = response.getJSONObject(i);
+                                String jobId = obj.optString("job_id", "");
+                                if (!jobId.isEmpty()) {
+                                    appliedJobs.put(jobId, true);
+                                    
+                                    // Find the job in allJobsList and add to appliedJobsList
+                                    for (Job job : allJobsList) {
+                                        if (job.getJobId().equals(jobId)) {
+                                            appliedJobsList.add(job);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Now show the appropriate tab with correct filtering
+                            if (isShowingAppliedTab) {
+                                showAppliedJobsTab();
+                            } else {
+                                showAllJobsTab();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // On error, still show the tab
+                            if (isShowingAppliedTab) {
+                                showAppliedJobsTab();
+                            } else {
+                                showAllJobsTab();
+                            }
+                        }
+                    },
+                    error -> {
+                        // On error, still show the tab (appliedJobs map will be empty)
+                        if (isShowingAppliedTab) {
+                            showAppliedJobsTab();
+                        } else {
+                            showAllJobsTab();
+                        }
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+            
+            ApiClient.getRequestQueue(requireContext()).add(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            // On error, still show the tab
+            if (isShowingAppliedTab) {
+                showAppliedJobsTab();
+            } else {
+                showAllJobsTab();
+            }
+        }
+    }
+    
     private void moveJobToEndAndAdvance(Job appliedJob) {
         if (appliedJob == null) return;
+        
+        String jobId = appliedJob.getJobId();
+        
+        // Mark as applied in the map (this should already be done, but ensure it)
+        appliedJobs.put(jobId, true);
         
         // Add to applied jobs list if not already there
         boolean alreadyInAppliedList = false;
         for (Job job : appliedJobsList) {
-            if (job.getJobId().equals(appliedJob.getJobId())) {
+            if (job.getJobId().equals(jobId)) {
                 alreadyInAppliedList = true;
                 break;
             }
