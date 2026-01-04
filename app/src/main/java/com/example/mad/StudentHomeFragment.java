@@ -38,6 +38,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
 
 public class StudentHomeFragment extends Fragment implements CardStackListener {
     
@@ -290,52 +294,48 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
             @Override
             public void onInterestedClicked() {
                 if (adapter == null || adapter.getItemCount() == 0) return;
-                
-                // Get the top job (the one currently visible)
+
                 int topPosition = layoutManager.getTopPosition();
                 if (topPosition < 0 || topPosition >= adapter.getItemCount()) return;
-                
+
                 Job currentJob = adapter.getItems().get(topPosition);
                 String jobId = currentJob.getJobId();
-                
-                // Check if already applied
+
                 if (appliedJobs.containsKey(jobId) && appliedJobs.get(jobId)) {
                     Toast.makeText(requireContext(), "You have already applied to this job", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                
-                // Check if user is logged in
+
                 if (currentUserId == null) {
                     Toast.makeText(requireContext(), "Please login to apply", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                
-                // Show dialog to enter message
-                showApplicationDialog(currentJob);
+
+                // ✅ PASS FALSE: This is a button click, card is still there.
+                showApplicationDialog(currentJob, false);
             }
 
             @Override
             public void onSaveClicked() {
                 if (adapter == null || adapter.getItemCount() == 0) return;
-                
-                // Get the top job
-                int topPosition = layoutManager.getTopPosition();
-                if (topPosition < 0 || topPosition >= adapter.getItemCount()) return;
-                
-                Job currentJob = adapter.getItems().get(topPosition);
-                String jobId = currentJob.getJobId();
-                
-                // Don't allow saving if already applied
-                if (appliedJobs.containsKey(jobId) && appliedJobs.get(jobId)) {
-                    Toast.makeText(requireContext(), "You have already applied to this job", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
+
                 View topCard = layoutManager.getTopView();
-                if (topCard != null) {
-                    topCard.findViewById(R.id.save_button).setEnabled(false);
-                }
-                triggerSwipe(Direction.Top, Duration.Slow.duration);
+                if (topCard == null) return;
+
+                MaterialButton saveButton = topCard.findViewById(R.id.save_button);
+
+                // 1. Swap to the SOLID icon we just fixed
+                saveButton.setIconResource(R.drawable.ic_saved);
+
+                // 2. Force tint to WHITE (This makes the solid block pure white)
+                saveButton.setIconTint(ColorStateList.valueOf(Color.WHITE));
+
+                saveButton.setEnabled(false);
+
+                // 3. Fly away after a split second
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    triggerSwipe(Direction.Top, Duration.Slow.duration);
+                }, 200);
             }
         });
     }
@@ -356,8 +356,8 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         layoutManager.setSwipeAnimationSetting(setting);
         cardStackView.swipe();
     }
-    
-    private void showApplicationDialog(Job job) {
+
+    private void showApplicationDialog(Job job, boolean isFromSwipe) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Apply to Job");
         builder.setMessage("Enter a short message/pitch:");
@@ -373,45 +373,68 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
             String pitch = input.getText().toString().trim();
             if (TextUtils.isEmpty(pitch)) {
                 Toast.makeText(requireContext(), "Please enter a message", Toast.LENGTH_SHORT).show();
+                // If they messed up the input on a swipe, bring the card back so they can try again
+                if (isFromSwipe) cardStackView.rewind();
             } else {
                 saveApplication(job, pitch);
             }
         });
 
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        // ✅ FIX: If Cancel is clicked, bring the card back!
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            dialog.cancel();
+            if (isFromSwipe) {
+                cardStackView.rewind();
+            }
+        });
+
+        // ✅ Handle clicking outside the box (dismiss)
+        builder.setOnCancelListener(dialog -> {
+            if (isFromSwipe) {
+                cardStackView.rewind();
+            }
+        });
+
         builder.show();
     }
-    
+
     private void saveApplication(Job job, String initialMessage) {
         if (currentUserId == null || job == null) {
             Toast.makeText(requireContext(), "Invalid data", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         String jobId = job.getJobId();
         String recruiterId = job.getRecruiterId();
-        
+
         // Check if already applied
         if (appliedJobs.containsKey(jobId) && appliedJobs.get(jobId)) {
             Toast.makeText(requireContext(), "You have already applied to this job", Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        // Update button state on current card
-        View topCard = layoutManager.getTopView();
-        if (topCard != null) {
-            MaterialButton interestedButton = topCard.findViewById(R.id.interested_button);
-            if (interestedButton != null) {
-                interestedButton.setText("Applied");
-                interestedButton.setEnabled(false);
-                // Disable Save button, but keep Not Now enabled so students can swipe away
-                MaterialButton notNowButton = topCard.findViewById(R.id.not_now_button);
-                MaterialButton saveButton = topCard.findViewById(R.id.save_button);
-                // Not Now stays enabled - don't disable it
-                if (saveButton != null) saveButton.setEnabled(false);
+
+        // ✅ FIX: Only update buttons if the visible card is the one we are applying to
+        // (Prevents disabling buttons on the NEXT card if we applied via Swipe)
+        int topPos = layoutManager.getTopPosition();
+        if (adapter != null && topPos >= 0 && topPos < adapter.getItemCount()) {
+            Job currentVisibleJob = adapter.getItems().get(topPos);
+
+            // Only update UI if the visible card matches the job we are saving
+            if (currentVisibleJob.getJobId().equals(jobId)) {
+                View topCard = layoutManager.getTopView();
+                if (topCard != null) {
+                    MaterialButton interestedButton = topCard.findViewById(R.id.interested_button);
+                    if (interestedButton != null) {
+                        interestedButton.setText("Applied");
+                        interestedButton.setEnabled(false);
+                    }
+                    MaterialButton saveButton = topCard.findViewById(R.id.save_button);
+                    // Not Now stays enabled
+                    if (saveButton != null) saveButton.setEnabled(false);
+                }
             }
         }
-        
+
         // Get student name from SharedPreferences
         SharedPreferences prefs = requireActivity().getSharedPreferences(LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
         String studentName = prefs.getString(LoginActivity.KEY_NAME, "");
@@ -448,7 +471,7 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                             }
                         }
                     }
-                    
+
                     // Check if error is due to duplicate (unique constraint violation)
                     if (statusCode == 409 || (responseBody != null && (responseBody.contains("duplicate") || responseBody.contains("unique")))) {
                         appliedJobs.put(jobId, true);
@@ -461,12 +484,22 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                         // Re-enable button on error
                         requireActivity().runOnUiThread(() -> {
                             Toast.makeText(requireContext(), "Failed to submit application. Please try again.", Toast.LENGTH_SHORT).show();
-                            View topCardView = layoutManager.getTopView();
-                            if (topCardView != null) {
-                                MaterialButton interestedBtn = topCardView.findViewById(R.id.interested_button);
-                                if (interestedBtn != null) {
-                                    interestedBtn.setText("Interested");
-                                    interestedBtn.setEnabled(true);
+
+                            // Re-enable the button if it was the visible card
+                            int currentTopPos = layoutManager.getTopPosition();
+                            if (adapter != null && currentTopPos >= 0 && currentTopPos < adapter.getItemCount()) {
+                                Job currentJob = adapter.getItems().get(currentTopPos);
+                                if (currentJob.getJobId().equals(jobId)) {
+                                    View topCardView = layoutManager.getTopView();
+                                    if (topCardView != null) {
+                                        MaterialButton interestedBtn = topCardView.findViewById(R.id.interested_button);
+                                        if (interestedBtn != null) {
+                                            interestedBtn.setText("Interested");
+                                            interestedBtn.setEnabled(true);
+                                        }
+                                        MaterialButton saveBtn = topCardView.findViewById(R.id.save_button);
+                                        if (saveBtn != null) saveBtn.setEnabled(true);
+                                    }
                                 }
                             }
                         });
@@ -768,13 +801,16 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
     @Override
     public void onCardSwiped(Direction direction) {
         if (adapter == null) return;
+
         int position = layoutManager.getTopPosition() - 1;
         if (position < 0 || position >= adapter.getItemCount()) return;
 
         Job swipedJob = adapter.getItems().get(position);
 
         if (direction == Direction.Right) {
-            Toast.makeText(requireContext(), "Marked as Interested!", Toast.LENGTH_SHORT).show();
+            // ✅ PASS TRUE: This tells the dialog "We came from a swipe!"
+            showApplicationDialog(swipedJob, true);
+
         } else if (direction == Direction.Top) {
             SavedJobsManager.getInstance().saveJob(swipedJob);
             Toast.makeText(requireContext(), "Job Saved!", Toast.LENGTH_SHORT).show();
