@@ -216,10 +216,10 @@ public class ProfileFragment extends Fragment {
         String role = prefs.getString(LoginActivity.KEY_ROLE, "student");
         String phone = prefs.getString("user_phone", "No Phone");
         String bio = prefs.getString("user_bio", "No bio added yet.");
-        
+
         tvPhone.setText("Phone: " + phone);
         tvBio.setText(bio);
-        
+
         if ("student".equals(role)) {
             resumeUrl = prefs.getString("user_resume_url", null);
             updateResumeStatus();
@@ -299,19 +299,19 @@ public class ProfileFragment extends Fragment {
                     + "&select=*"
                     + "&order=created_at.desc";
 
-            JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
-                    response -> {
-                        try {
-                            ArrayList<ExperiencePostItem> list = new ArrayList<>();
-                            for (int i = 0; i < response.length(); i++) {
-                                JSONObject obj = response.getJSONObject(i);
-                                list.add(new ExperiencePostItem(
-                                        obj.getString("id"), obj.getString("user_id"),
-                                        obj.getString("title"), obj.optString("description", ""),
-                                        obj.optString("media_url", ""), obj.optString("media_type", ""),
-                                        obj.getString("created_at")
-                                ));
-                            }
+        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
+                response -> {
+                    try {
+                        ArrayList<ExperiencePostItem> list = new ArrayList<>();
+                        for (int i = 0; i < response.length(); i++) {
+                            JSONObject obj = response.getJSONObject(i);
+                            list.add(new ExperiencePostItem(
+                                    obj.getString("id"), obj.getString("user_id"),
+                                    obj.getString("title"), obj.optString("description", ""),
+                                    obj.optString("media_url", ""), obj.optString("media_type", ""),
+                                    obj.getString("created_at")
+                            ));
+                        }
                             
                             // Fallback: Sort by created_at descending if API ordering didn't work
                             // This ensures newest posts are always on top
@@ -323,21 +323,21 @@ public class ProfileFragment extends Fragment {
                                 return dateB.compareTo(dateA);
                             });
                             
-                            adapter.updateData(list);
+                        adapter.updateData(list);
                         } catch (JSONException e) { 
                             e.printStackTrace(); 
                             Toast.makeText(getContext(), "Error parsing posts", Toast.LENGTH_SHORT).show();
                         }
-                    },
+                },
                     error -> {
                         error.printStackTrace();
                         Toast.makeText(getContext(), "Failed to load posts", Toast.LENGTH_SHORT).show();
                     }
-            ) {
-                @Override
-                public Map<String, String> getHeaders() { return ApiClient.getHeaders(); }
-            };
-            ApiClient.getRequestQueue(requireContext()).add(request);
+        ) {
+            @Override
+            public Map<String, String> getHeaders() { return ApiClient.getHeaders(); }
+        };
+        ApiClient.getRequestQueue(requireContext()).add(request);
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(getContext(), "Error loading posts", Toast.LENGTH_SHORT).show();
