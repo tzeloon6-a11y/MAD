@@ -131,6 +131,15 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         // Set student name
         holder.tvStudentName.setText(application.getStudentName());
         
+        // Show/hide red dot indicator for new applicants
+        if (holder.viewNewApplicantIndicator != null) {
+            if (application.isNewApplicant()) {
+                holder.viewNewApplicantIndicator.setVisibility(View.VISIBLE);
+            } else {
+                holder.viewNewApplicantIndicator.setVisibility(View.GONE);
+            }
+        }
+        
         // Set personal information
         if (holder.tvStudentEmail != null) {
             String email = application.getStudentEmail();
@@ -579,6 +588,7 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         TextView tvInitialMessage;
         Button btnStartChat;
         Button btnViewResume;
+        View viewNewApplicantIndicator;
 
         public ApplicantViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -589,6 +599,7 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
             tvInitialMessage = itemView.findViewById(R.id.tv_initial_message);
             btnStartChat = itemView.findViewById(R.id.btn_start_chat);
             btnViewResume = itemView.findViewById(R.id.btn_view_resume);
+            viewNewApplicantIndicator = itemView.findViewById(R.id.view_new_applicant_indicator);
         }
     }
 }

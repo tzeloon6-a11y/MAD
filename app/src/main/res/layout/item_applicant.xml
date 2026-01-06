@@ -11,15 +11,36 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Student Name -->
-        <TextView
-            android:id="@+id/tv_student_name"
-            android:layout_width="wrap_content"
+        <!-- Student Name Row with New Applicant Indicator -->
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Student Name"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:textColor="@color/classic_text_primary" />
+            android:layout_marginBottom="2dp">
+
+            <!-- Student Name -->
+            <TextView
+                android:id="@+id/tv_student_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="Student Name"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="@color/classic_text_primary" />
+
+            <!-- Red Dot Indicator for New Applicant -->
+            <View
+                android:id="@+id/view_new_applicant_indicator"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/red_dot"
+                android:visibility="gone" />
+
+        </RelativeLayout>
 
         <!-- Student Email -->
         <TextView

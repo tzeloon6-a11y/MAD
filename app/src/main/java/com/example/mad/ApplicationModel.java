@@ -14,6 +14,7 @@ public class ApplicationModel {
     private String studentPhone;
     private String studentBio;
     private String studentResumeUrl;
+    private boolean isNewApplicant = false; // Track if this is a new/unviewed applicant
 
     public ApplicationModel(String applicationId, String studentId, String studentName,
                             String recruiterId, String jobId, String status,
@@ -90,6 +91,14 @@ public class ApplicationModel {
     
     public void setStudentResumeUrl(String studentResumeUrl) {
         this.studentResumeUrl = studentResumeUrl;
+    }
+    
+    public boolean isNewApplicant() {
+        return isNewApplicant;
+    }
+    
+    public void setNewApplicant(boolean isNewApplicant) {
+        this.isNewApplicant = isNewApplicant;
     }
 }
 
