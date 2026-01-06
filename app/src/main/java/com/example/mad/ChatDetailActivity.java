@@ -359,14 +359,30 @@ public class ChatDetailActivity extends AppCompatActivity {
                     },
                     error -> {
                         String responseBody = null;
-                        if (error.networkResponse != null && error.networkResponse.data != null) {
-                            try {
-                                responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                        String errorMessage = "Failed to send message";
+                        
+                        if (error.networkResponse != null) {
+                            int statusCode = error.networkResponse.statusCode;
+                            if (error.networkResponse.data != null) {
+                                try {
+                                    responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
+                                    errorMessage += " (Status: " + statusCode + ")";
+                                    android.util.Log.e("ChatDetailActivity", "Send message error: " + responseBody);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            } else {
+                                errorMessage += " (Status: " + statusCode + ")";
+                                android.util.Log.e("ChatDetailActivity", "Send message error - Status: " + statusCode);
                             }
+                        } else {
+                            android.util.Log.e("ChatDetailActivity", "Send message error: " + error.getMessage());
+                            errorMessage += ": " + (error.getMessage() != null ? error.getMessage() : "Network error");
                         }
-                        Toast.makeText(this, "Failed to send message", Toast.LENGTH_SHORT).show();
+                        
+                        runOnUiThread(() -> {
+                            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+                        });
                     }
             ) {
                 @Override
@@ -385,13 +401,23 @@ public class ChatDetailActivity extends AppCompatActivity {
                         JSONObject messageJson = new JSONObject();
                         messageJson.put("chat_id", chatId);
                         messageJson.put("sender_id", currentUserId);
-                        messageJson.put("receiver_id", receiverId);
                         messageJson.put("text", messageText);
                         messageJson.put("timestamp", timestamp);
-                        messageJson.put("is_read", false); // New messages are unread by default
-                        return messageJson.toString().getBytes(StandardCharsets.UTF_8);
+                        
+                        // Add receiver_id and is_read fields
+                        // Note: These columns must exist in your Supabase messages table
+                        // If you get errors, run the migration script in SUPABASE_MIGRATION_FIX.md
+                        if (receiverId != null && !receiverId.isEmpty()) {
+                            messageJson.put("receiver_id", receiverId);
+                        }
+                        messageJson.put("is_read", false);
+                        
+                        String jsonString = messageJson.toString();
+                        android.util.Log.d("ChatDetailActivity", "Sending message JSON: " + jsonString);
+                        return jsonString.getBytes(StandardCharsets.UTF_8);
                     } catch (Exception e) {
                         e.printStackTrace();
+                        android.util.Log.e("ChatDetailActivity", "Error creating message JSON: " + e.getMessage());
                         return null;
                     }
                 }
