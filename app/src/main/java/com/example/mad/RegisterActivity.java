@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Patterns;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
@@ -22,6 +23,7 @@ import org.json.JSONObject;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.regex.Pattern;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -139,6 +141,30 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
+    // ✅ ADDED: Email Validation
+    private boolean isValidEmail(String email) {
+        return !TextUtils.isEmpty(email) && Patterns.EMAIL_ADDRESS.matcher(email).matches();
+    }
+
+    // ✅ ADDED: Strong Password Validation
+    private boolean isValidPassword(String password) {
+        if (password == null) return false;
+
+        // At least 8 chars
+        if (password.length() < 8) return false;
+
+        // Regex: at least one uppercase, one lowercase, one special character
+        Pattern hasUppercase = Pattern.compile("[A-Z]");
+        Pattern hasLowercase = Pattern.compile("[a-z]");
+        Pattern hasSpecialChar = Pattern.compile("[!@#$%^&*()_+\\-=\\[\\]{};':\\\\\"|,.<>\\/?~`]");
+
+        if (!hasUppercase.matcher(password).find()) return false;
+        if (!hasLowercase.matcher(password).find()) return false;
+        if (!hasSpecialChar.matcher(password).find()) return false;
+
+        return true;
+    }
+
     private void attemptRegister() {
         String name = etName.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
@@ -146,6 +172,19 @@ public class RegisterActivity extends AppCompatActivity {
 
         if (TextUtils.isEmpty(name) || TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // ✅ ADDED: Validation Checks
+        if (!isValidEmail(email)) {
+            etEmail.setError("Please enter a valid email address.");
+            Toast.makeText(this, "Invalid email format.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!isValidPassword(password)) {
+            etPassword.setError("Password must be at least 8 characters and include an uppercase, a lowercase, and a special character.");
+            Toast.makeText(this, "Password is not strong enough.", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -172,16 +211,11 @@ public class RegisterActivity extends AppCompatActivity {
                 json.put("password", password);
                 json.put("role", role);
                 
-                // Add resume_url if it was uploaded
                 if (resumeUrl != null && !resumeUrl.isEmpty()) {
                     json.put("resume_url", resumeUrl);
-                    android.util.Log.d("RegisterActivity", "Including resume_url in registration: " + resumeUrl);
-                } else {
-                    android.util.Log.d("RegisterActivity", "No resume_url to include in registration");
                 }
 
                 String jsonString = json.toString();
-                android.util.Log.d("RegisterActivity", "Registration JSON being sent: " + jsonString);
                 
                 OutputStream os = conn.getOutputStream();
                 os.write(jsonString.getBytes());
@@ -197,8 +231,6 @@ public class RegisterActivity extends AppCompatActivity {
                     if (responseCode == 201) {
                         Toast.makeText(this, "Registration Successful!", Toast.LENGTH_LONG).show();
                         saveLocally(name, email, role);
-                        // Note: Resume URL is already saved in database during registration
-                        // User will need to login to access their account
                         startActivity(new Intent(this, LoginActivity.class));
                         finish();
                     } else {
@@ -228,4 +260,3 @@ public class RegisterActivity extends AppCompatActivity {
         editor.apply();
     }
 }
-
