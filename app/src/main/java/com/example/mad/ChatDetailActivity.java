@@ -331,14 +331,14 @@ public class ChatDetailActivity extends AppCompatActivity {
 
         // Determine receiver_id (the other user in the chat)
         // Chat data should already be loaded in onCreate(), but check to be safe
-        String receiverId = null;
-        if (studentId != null && recruiterId != null) {
-            receiverId = currentUserId.equals(studentId) ? recruiterId : studentId;
-        } else {
+        if (studentId == null || recruiterId == null) {
             // If chat data not loaded yet, show error
             Toast.makeText(this, "Chat data not loaded. Please wait...", Toast.LENGTH_SHORT).show();
             return;
         }
+        
+        // Make receiverId final for use in inner class
+        final String receiverId = currentUserId.equals(studentId) ? recruiterId : studentId;
 
         // Send message to Supabase
         try {
@@ -385,9 +385,7 @@ public class ChatDetailActivity extends AppCompatActivity {
                         JSONObject messageJson = new JSONObject();
                         messageJson.put("chat_id", chatId);
                         messageJson.put("sender_id", currentUserId);
-                        if (receiverId != null) {
-                            messageJson.put("receiver_id", receiverId);
-                        }
+                        messageJson.put("receiver_id", receiverId);
                         messageJson.put("text", messageText);
                         messageJson.put("timestamp", timestamp);
                         messageJson.put("is_read", false); // New messages are unread by default
