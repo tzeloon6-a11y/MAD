@@ -87,12 +87,33 @@ public class ChatDetailActivity extends AppCompatActivity {
 
         // Load initial messages
         loadMessages();
+        
+        // Mark messages as read when opening chat
+        markChatAsRead();
 
         // Setup Send button
         btnSend.setOnClickListener(v -> sendMessage());
 
         // Setup real-time polling
         setupMessagePolling();
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Mark as read when returning to chat
+        markChatAsRead();
+    }
+    
+    private void markChatAsRead() {
+        // Store current timestamp as last viewed time for this chat
+        String currentTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                .format(new Date());
+        
+        SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("last_viewed_" + chatId, currentTime);
+        editor.apply();
     }
     
     private void loadChatData() {
