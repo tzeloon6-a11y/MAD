@@ -364,105 +364,65 @@ public class ChatFragment extends Fragment {
             return;
         }
         
-        SharedPreferences prefs = requireActivity().getSharedPreferences(LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
         final int[] completedCount = {0};
         final int totalChats = chatList.size();
         
+        // Count unread messages for each chat using database is_read field
         for (ChatModel chat : chatList) {
             String chatId = chat.getChatId();
-            String studentId = chat.getStudentId();
-            String recruiterId = chat.getRecruiterId();
-            String chatTimestamp = chat.getTimestamp(); // Last message timestamp from chat
             
-            // Determine the other user (sender of messages we haven't read)
-            String otherUserId = currentUserId.equals(studentId) ? recruiterId : studentId;
-            
-            // Get last viewed timestamp for this chat
-            String lastViewedKey = "last_viewed_" + chatId;
-            String lastViewedTime = prefs.getString(lastViewedKey, "");
-            
-            // If we've never viewed this chat, or if the chat's last message is newer than our last viewed time
-            // then we have unread messages
-            if (lastViewedTime == null || lastViewedTime.isEmpty()) {
-                // Never viewed - check if there are any messages from the other user
-                countUnreadMessagesForChat(chat, chatId, otherUserId, "", completedCount, totalChats, chatList);
-            } else if (chatTimestamp != null && !chatTimestamp.isEmpty()) {
-                // Compare chat's last message timestamp with our last viewed time
-                // If chat timestamp is newer, we have unread messages
-                if (chatTimestamp.compareTo(lastViewedTime) > 0) {
-                    // Chat has new messages - count unread from other user after last viewed time
-                    countUnreadMessagesForChat(chat, chatId, otherUserId, lastViewedTime, completedCount, totalChats, chatList);
-                } else {
-                    // No new messages - unread count is 0
-                    chat.setUnreadCount(0);
-                    completedCount[0]++;
-                    if (completedCount[0] == totalChats) {
-                        adapter.updateData(chatList);
-                    }
-                }
-            } else {
-                // Fallback: count messages from other user after last viewed time
-                countUnreadMessagesForChat(chat, chatId, otherUserId, lastViewedTime, completedCount, totalChats, chatList);
-            }
-        }
-    }
-    
-    private void countUnreadMessagesForChat(ChatModel chat, String chatId, String senderId, String lastViewedTime,
-                                            int[] completedCount, int totalChats, ArrayList<ChatModel> chatList) {
-        try {
-            String encodedChatId = URLEncoder.encode(chatId, "UTF-8");
-            String encodedSenderId = URLEncoder.encode(senderId, "UTF-8");
-            
-            StringBuilder url = new StringBuilder(SupabaseConfig.SUPABASE_URL
-                    + "/rest/v1/messages?select=message_id&chat_id=eq." + encodedChatId
-                    + "&sender_id=eq." + encodedSenderId);
-            
-            // If we have a last viewed time, only count messages after that
-            if (lastViewedTime != null && !lastViewedTime.isEmpty()) {
-                url.append("&timestamp=gt.").append(URLEncoder.encode(lastViewedTime, "UTF-8"));
-            }
-            
-            JsonArrayRequest request = new JsonArrayRequest(
-                    Request.Method.GET,
-                    url.toString(),
-                    null,
-                    response -> {
-                        chat.setUnreadCount(response.length());
-                        completedCount[0]++;
-                        
-                        // When all chats are processed, update adapter
-                        if (completedCount[0] == totalChats) {
-                            adapter.updateData(chatList);
+            // Count unread messages for this chat where receiver is current user
+            try {
+                String encodedChatId = URLEncoder.encode(chatId, "UTF-8");
+                String encodedReceiverId = URLEncoder.encode(currentUserId, "UTF-8");
+                
+                String url = SupabaseConfig.SUPABASE_URL
+                        + "/rest/v1/messages?select=message_id&chat_id=eq." + encodedChatId
+                        + "&receiver_id=eq." + encodedReceiverId
+                        + "&is_read=eq.false";
+                
+                JsonArrayRequest request = new JsonArrayRequest(
+                        Request.Method.GET,
+                        url,
+                        null,
+                        response -> {
+                            chat.setUnreadCount(response.length());
+                            completedCount[0]++;
+                            
+                            // When all chats are processed, update adapter
+                            if (completedCount[0] == totalChats) {
+                                adapter.updateData(chatList);
+                            }
+                        },
+                        error -> {
+                            chat.setUnreadCount(0);
+                            completedCount[0]++;
+                            
+                            if (completedCount[0] == totalChats) {
+                                adapter.updateData(chatList);
+                            }
                         }
-                    },
-                    error -> {
-                        chat.setUnreadCount(0);
-                        completedCount[0]++;
-                        
-                        if (completedCount[0] == totalChats) {
-                            adapter.updateData(chatList);
-                        }
+                ) {
+                    @Override
+                    public Map<String, String> getHeaders() {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                        headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                        headers.put("Content-Type", "application/json");
+                        return headers;
                     }
-            ) {
-                @Override
-                public Map<String, String> getHeaders() {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
-                    headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
-                    headers.put("Content-Type", "application/json");
-                    return headers;
+                };
+                
+                ApiClient.getRequestQueue(requireContext()).add(request);
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                chat.setUnreadCount(0);
+                completedCount[0]++;
+                
+                if (completedCount[0] == totalChats) {
+                    adapter.updateData(chatList);
                 }
-            };
-            
-            ApiClient.getRequestQueue(requireContext()).add(request);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            chat.setUnreadCount(0);
-            completedCount[0]++;
-            
-            if (completedCount[0] == totalChats) {
-                adapter.updateData(chatList);
             }
         }
     }

@@ -106,14 +106,54 @@ public class ChatDetailActivity extends AppCompatActivity {
     }
     
     private void markChatAsRead() {
-        // Store current timestamp as last viewed time for this chat
-        String currentTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                .format(new Date());
-        
-        SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("last_viewed_" + chatId, currentTime);
-        editor.apply();
+        // Mark all unread messages in this chat as read using database
+        try {
+            String encodedChatId = java.net.URLEncoder.encode(chatId, "UTF-8");
+            String encodedReceiverId = java.net.URLEncoder.encode(currentUserId, "UTF-8");
+            
+            String url = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/messages?chat_id=eq." + encodedChatId
+                    + "&receiver_id=eq." + encodedReceiverId
+                    + "&is_read=eq.false";
+
+            StringRequest request = new StringRequest(
+                    Request.Method.PATCH,
+                    url,
+                    response -> {
+                        // Successfully marked as read
+                    },
+                    error -> {
+                        // Silent fail - not critical if this fails
+                    }
+            ) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                    headers.put("Content-Type", "application/json");
+                    headers.put("Prefer", "return=minimal");
+                    return headers;
+                }
+
+                @Override
+                public byte[] getBody() {
+                    try {
+                        JSONObject updateJson = new JSONObject();
+                        updateJson.put("is_read", true);
+                        return updateJson.toString().getBytes(StandardCharsets.UTF_8);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }
+            };
+
+            ApiClient.getRequestQueue(this).add(request);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     private void loadChatData() {
@@ -289,6 +329,17 @@ public class ChatDetailActivity extends AppCompatActivity {
         String timestamp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
                 .format(new Date());
 
+        // Determine receiver_id (the other user in the chat)
+        // Chat data should already be loaded in onCreate(), but check to be safe
+        String receiverId = null;
+        if (studentId != null && recruiterId != null) {
+            receiverId = currentUserId.equals(studentId) ? recruiterId : studentId;
+        } else {
+            // If chat data not loaded yet, show error
+            Toast.makeText(this, "Chat data not loaded. Please wait...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // Send message to Supabase
         try {
             String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/messages";
@@ -334,8 +385,12 @@ public class ChatDetailActivity extends AppCompatActivity {
                         JSONObject messageJson = new JSONObject();
                         messageJson.put("chat_id", chatId);
                         messageJson.put("sender_id", currentUserId);
+                        if (receiverId != null) {
+                            messageJson.put("receiver_id", receiverId);
+                        }
                         messageJson.put("text", messageText);
                         messageJson.put("timestamp", timestamp);
+                        messageJson.put("is_read", false); // New messages are unread by default
                         return messageJson.toString().getBytes(StandardCharsets.UTF_8);
                     } catch (Exception e) {
                         e.printStackTrace();

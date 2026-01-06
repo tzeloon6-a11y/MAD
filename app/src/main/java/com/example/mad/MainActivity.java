@@ -150,65 +150,42 @@ public class MainActivity extends AppCompatActivity {
         if (currentUserId == null) return;
         
         try {
-            // First, get all chats where current user is involved
-            String encodedUserId = URLEncoder.encode(currentUserId, "UTF-8");
-            String chatsUrl = SupabaseConfig.SUPABASE_URL
-                    + "/rest/v1/chats?select=chat_id,student_id,recruiter_id"
-                    + "&or=(student_id.eq." + encodedUserId + ",recruiter_id.eq." + encodedUserId + ")";
+            // Count distinct chats that have at least one unread message
+            // This gives us the number of CHATS with unread, not total messages
+            String encodedReceiverId = URLEncoder.encode(currentUserId, "UTF-8");
+            String url = SupabaseConfig.SUPABASE_URL
+                    + "/rest/v1/messages?select=chat_id"
+                    + "&receiver_id=eq." + encodedReceiverId
+                    + "&is_read=eq.false";
             
-            JsonArrayRequest chatsRequest = new JsonArrayRequest(
+            JsonArrayRequest request = new JsonArrayRequest(
                     Request.Method.GET,
-                    chatsUrl,
+                    url,
                     null,
                     response -> {
                         try {
-                            if (response.length() == 0) {
-                                updateChatBadge(0);
-                                lastUnreadCount = 0;
-                                return;
-                            }
-                            
-                            SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
-                            final int[] completedCount = {0};
-                            final int[] totalUnread = {0};
-                            final int totalChats = response.length();
-                            
-                            // For each chat, count unread messages asynchronously
+                            // Count distinct chat_ids
+                            java.util.Set<String> unreadChatIds = new java.util.HashSet<>();
                             for (int i = 0; i < response.length(); i++) {
-                                JSONObject chatObj = response.getJSONObject(i);
-                                String chatId = chatObj.optString("chat_id", "");
-                                String studentId = chatObj.optString("student_id", "");
-                                String recruiterId = chatObj.optString("recruiter_id", "");
-                                
-                                // Determine the other user (sender of messages we haven't read)
-                                String otherUserId = currentUserId.equals(studentId) ? recruiterId : studentId;
-                                
-                                // Get last viewed timestamp for this chat
-                                String lastViewedKey = "last_viewed_" + chatId;
-                                String lastViewedTime = prefs.getString(lastViewedKey, "");
-                                
-                                // Count unread messages asynchronously
-                                countUnreadMessagesAsync(chatId, otherUserId, lastViewedTime, unreadCount -> {
-                                    synchronized (totalUnread) {
-                                        totalUnread[0] += unreadCount;
-                                        completedCount[0]++;
-                                        
-                                        // When all chats are processed, update UI
-                                        if (completedCount[0] == totalChats) {
-                                            runOnUiThread(() -> {
-                                                updateChatBadge(totalUnread[0]);
-                                                
-                                                // Show banner if new unread messages appeared
-                                                if (totalUnread[0] > lastUnreadCount && totalUnread[0] > 0) {
-                                                    showNotificationBanner(totalUnread[0]);
-                                                }
-                                                
-                                                lastUnreadCount = totalUnread[0];
-                                            });
-                                        }
-                                    }
-                                });
+                                JSONObject msgObj = response.getJSONObject(i);
+                                String chatId = msgObj.optString("chat_id", "");
+                                if (chatId != null && !chatId.isEmpty()) {
+                                    unreadChatIds.add(chatId);
+                                }
                             }
+                            
+                            int unreadChatCount = unreadChatIds.size();
+                            
+                            runOnUiThread(() -> {
+                                updateChatBadge(unreadChatCount);
+                                
+                                // Show banner if new unread chats appeared
+                                if (unreadChatCount > lastUnreadCount && unreadChatCount > 0) {
+                                    showNotificationBanner(unreadChatCount);
+                                }
+                                
+                                lastUnreadCount = unreadChatCount;
+                            });
                             
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -224,73 +201,30 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
             
-            ApiClient.getRequestQueue(this).add(chatsRequest);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    private void countUnreadMessagesAsync(String chatId, String senderId, String lastViewedTime, UnreadCountCallback callback) {
-        try {
-            String encodedChatId = URLEncoder.encode(chatId, "UTF-8");
-            String encodedSenderId = URLEncoder.encode(senderId, "UTF-8");
-            
-            StringBuilder url = new StringBuilder(SupabaseConfig.SUPABASE_URL
-                    + "/rest/v1/messages?select=message_id&chat_id=eq." + encodedChatId
-                    + "&sender_id=eq." + encodedSenderId);
-            
-            // If we have a last viewed time, only count messages after that
-            if (lastViewedTime != null && !lastViewedTime.isEmpty()) {
-                url.append("&timestamp=gt.").append(URLEncoder.encode(lastViewedTime, "UTF-8"));
-            }
-            
-            JsonArrayRequest request = new JsonArrayRequest(
-                    Request.Method.GET,
-                    url.toString(),
-                    null,
-                    response -> {
-                        callback.onCount(response.length());
-                    },
-                    error -> {
-                        callback.onCount(0);
-                    }
-            ) {
-                @Override
-                public Map<String, String> getHeaders() {
-                    return ApiClient.getHeaders();
-                }
-            };
-            
             ApiClient.getRequestQueue(this).add(request);
             
         } catch (Exception e) {
             e.printStackTrace();
-            callback.onCount(0);
         }
     }
     
-    private interface UnreadCountCallback {
-        void onCount(int count);
-    }
-    
-    private void updateChatBadge(int unreadCount) {
+    private void updateChatBadge(int unreadChatCount) {
         BadgeDrawable badge = bottomNavigationView.getOrCreateBadge(R.id.nav_chat);
         
-        if (unreadCount > 0) {
+        if (unreadChatCount > 0) {
             badge.setVisible(true);
-            badge.setNumber(unreadCount);
+            badge.setNumber(unreadChatCount);
         } else {
             badge.clearNumber();
             badge.setVisible(false);
         }
     }
     
-    private void showNotificationBanner(int unreadCount) {
+    private void showNotificationBanner(int unreadChatCount) {
         if (notificationBanner != null) {
-            String message = unreadCount == 1 
-                    ? "You have 1 unread message" 
-                    : "You have " + unreadCount + " unread messages";
+            String message = unreadChatCount == 1 
+                    ? "You have 1 unread chat" 
+                    : "You have " + unreadChatCount + " unread chats";
             NotificationHelper.showNotificationBanner(notificationBanner, message);
         }
     }
