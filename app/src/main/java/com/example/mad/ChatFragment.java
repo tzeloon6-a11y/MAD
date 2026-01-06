@@ -325,8 +325,8 @@ public class ChatFragment extends Fragment {
                                 }
                             }
                             
-                            // Update adapter with complete data
-                            adapter.updateData(chatList);
+                            // Fetch unread counts for each chat
+                            fetchUnreadCountsForChats(chatList);
                             
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -355,6 +355,88 @@ public class ChatFragment extends Fragment {
             e.printStackTrace();
             // On error, still show chats without user data
             adapter.updateData(chatList);
+        }
+    }
+    
+    private void fetchUnreadCountsForChats(ArrayList<ChatModel> chatList) {
+        if (chatList.isEmpty()) {
+            adapter.updateData(chatList);
+            return;
+        }
+        
+        SharedPreferences prefs = requireActivity().getSharedPreferences(LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        final int[] completedCount = {0};
+        final int totalChats = chatList.size();
+        
+        for (ChatModel chat : chatList) {
+            String chatId = chat.getChatId();
+            String studentId = chat.getStudentId();
+            String recruiterId = chat.getRecruiterId();
+            
+            // Determine the other user (sender of messages we haven't read)
+            String otherUserId = currentUserId.equals(studentId) ? recruiterId : studentId;
+            
+            // Get last viewed timestamp for this chat
+            String lastViewedKey = "last_viewed_" + chatId;
+            String lastViewedTime = prefs.getString(lastViewedKey, "");
+            
+            // Count unread messages
+            try {
+                String encodedChatId = URLEncoder.encode(chatId, "UTF-8");
+                String encodedSenderId = URLEncoder.encode(otherUserId, "UTF-8");
+                
+                StringBuilder url = new StringBuilder(SupabaseConfig.SUPABASE_URL
+                        + "/rest/v1/messages?select=message_id&chat_id=eq." + encodedChatId
+                        + "&sender_id=eq." + encodedSenderId);
+                
+                // If we have a last viewed time, only count messages after that
+                if (lastViewedTime != null && !lastViewedTime.isEmpty()) {
+                    url.append("&timestamp=gt.").append(URLEncoder.encode(lastViewedTime, "UTF-8"));
+                }
+                
+                JsonArrayRequest request = new JsonArrayRequest(
+                        Request.Method.GET,
+                        url.toString(),
+                        null,
+                        response -> {
+                            chat.setUnreadCount(response.length());
+                            completedCount[0]++;
+                            
+                            // When all chats are processed, update adapter
+                            if (completedCount[0] == totalChats) {
+                                adapter.updateData(chatList);
+                            }
+                        },
+                        error -> {
+                            chat.setUnreadCount(0);
+                            completedCount[0]++;
+                            
+                            if (completedCount[0] == totalChats) {
+                                adapter.updateData(chatList);
+                            }
+                        }
+                ) {
+                    @Override
+                    public Map<String, String> getHeaders() {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                        headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                        headers.put("Content-Type", "application/json");
+                        return headers;
+                    }
+                };
+                
+                ApiClient.getRequestQueue(requireContext()).add(request);
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                chat.setUnreadCount(0);
+                completedCount[0]++;
+                
+                if (completedCount[0] == totalChats) {
+                    adapter.updateData(chatList);
+                }
+            }
         }
     }
     

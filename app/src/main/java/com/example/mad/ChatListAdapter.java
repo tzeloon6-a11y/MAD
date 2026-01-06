@@ -72,6 +72,16 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
             }
         }
         
+        // Show/hide red dot indicator for unread messages
+        if (holder.viewUnreadIndicator != null) {
+            int unreadCount = chat.getUnreadCount();
+            if (unreadCount > 0) {
+                holder.viewUnreadIndicator.setVisibility(View.VISIBLE);
+            } else {
+                holder.viewUnreadIndicator.setVisibility(View.GONE);
+            }
+        }
+        
         // Set click listener
         holder.itemView.setOnClickListener(v -> {
             if (clickListener != null) {
@@ -135,6 +145,7 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
         TextView tvJobTitle;
         TextView tvLastMessage;
         TextView tvTimestamp;
+        View viewUnreadIndicator;
 
         public ChatListViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -143,6 +154,7 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
             tvJobTitle = itemView.findViewById(R.id.tv_job_title);
             tvLastMessage = itemView.findViewById(R.id.tv_last_message);
             tvTimestamp = itemView.findViewById(R.id.tv_timestamp);
+            viewUnreadIndicator = itemView.findViewById(R.id.view_unread_indicator);
         }
     }
 }

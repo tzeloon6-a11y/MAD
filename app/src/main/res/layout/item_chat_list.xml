@@ -14,15 +14,36 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Other User's Name -->
-        <TextView
-            android:id="@+id/tv_other_user_name"
-            android:layout_width="wrap_content"
+        <!-- Header Row with Name and Unread Indicator -->
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="User Name"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:textColor="@color/classic_text_primary" />
+            android:layout_marginBottom="2dp">
+
+            <!-- Other User's Name -->
+            <TextView
+                android:id="@+id/tv_other_user_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="User Name"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/classic_text_primary" />
+
+            <!-- Red Dot Indicator for Unread -->
+            <View
+                android:id="@+id/view_unread_indicator"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/red_dot"
+                android:visibility="gone" />
+
+        </RelativeLayout>
 
         <!-- Other User's Bio (for recruiters viewing students) -->
         <TextView
