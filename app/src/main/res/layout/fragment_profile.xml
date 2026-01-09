@@ -1,106 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/ll_profile_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/classic_background"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:paddingTop="24dp">
+    android:background="#FFFFFF">
 
-    <TextView
-        android:id="@+id/tv_profile_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Name"
-        android:textColor="@color/app_blue"
-        android:textSize="24sp"
-        android:textStyle="bold"/>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/ll_bottom_buttons"
+        android:fillViewport="true">
 
-    <TextView
-        android:id="@+id/tv_profile_role"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Role"
-        android:textColor="@color/classic_text_secondary"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    <TextView
-        android:id="@+id/tv_profile_phone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Phone: Not set"
-        android:textColor="@color/classic_text_primary"
-        android:textSize="14sp"
-        android:layout_marginBottom="4dp"/>
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#E3F2FD"
+                app:strokeColor="#BBDEFB"
+                app:strokeWidth="1dp">
 
-    <TextView
-        android:id="@+id/tv_profile_bio"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:layout_gravity="center_horizontal"
+                        android:src="@mipmap/ic_launcher_round"
+                        android:layout_marginBottom="12dp"/>
+
+                    <TextView
+                        android:id="@+id/tv_profile_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:text="Student Name"
+                        android:textColor="#1A237E"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_profile_role"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="4dp"
+                        android:text="Role: student"
+                        android:textColor="#5C6BC0"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_profile_phone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Phone: Not set"
+                        android:textColor="#1A237E"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_profile_bio"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="No bio added yet."
+                        android:textColor="#1A237E"
+                        android:textSize="14sp"
+                        android:fontStyle="italic"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="16dp">
+
+                        <TextView
+                            android:id="@+id/tv_resume_status"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Resume: Not uploaded"
+                            android:textSize="14sp"
+                            android:textColor="#1A237E"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_upload_resume"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Upload"
+                            android:textSize="12sp"
+                            android:textColor="#1A237E"
+                            app:strokeColor="#1A237E"
+                            android:minHeight="40dp"
+                            app:cornerRadius="12dp"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="My Experience Posts"
+                android:textColor="#1A237E"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:layout_marginBottom="12dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_experience_posts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/ll_bottom_buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No bio added yet."
-        android:textColor="@color/classic_text_primary"
-        android:textSize="14sp"
-        android:layout_marginBottom="16dp"
-        android:fontStyle="italic"/>
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#FFFFFF"
+        android:elevation="8dp">
 
-    <TextView
-        android:id="@+id/tv_resume_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Resume: Not uploaded"
-        android:textColor="@color/classic_text_primary"
-        android:textSize="14sp"
-        android:padding="8dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:layout_marginBottom="24dp"/>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_edit_profile"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Edit Profile"
+            android:textColor="#1A237E"
+            app:strokeColor="#1A237E"
+            app:cornerRadius="30dp"/>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/app_yellow"
-        android:layout_marginBottom="16dp"/>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_logout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Logout"
+            android:textColor="#D32F2F"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="My Experience Posts"
-        android:textColor="@color/app_blue"
-        android:textStyle="bold"
-        android:textSize="20sp"
-        android:paddingBottom="12dp" />
+    </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_experience_posts"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:scrollbars="vertical"
-        android:nestedScrollingEnabled="true" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_edit_profile"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Edit Profile"
-        android:textColor="@color/app_blue"
-        app:strokeColor="@color/app_blue" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_logout"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="8dp"
-        android:text="Logout"
-        android:textColor="#D32F2F"
-        app:strokeColor="#D32F2F" />
-
-</LinearLayout>
+</RelativeLayout>
