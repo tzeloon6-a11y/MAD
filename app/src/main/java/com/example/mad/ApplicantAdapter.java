@@ -131,6 +131,15 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         // Set student name
         holder.tvStudentName.setText(application.getStudentName());
         
+        // Show/hide red dot indicator for new applicants
+        if (holder.viewNewApplicantIndicator != null) {
+            if (application.isNewApplicant()) {
+                holder.viewNewApplicantIndicator.setVisibility(View.VISIBLE);
+            } else {
+                holder.viewNewApplicantIndicator.setVisibility(View.GONE);
+            }
+        }
+        
         // Set personal information
         if (holder.tvStudentEmail != null) {
             String email = application.getStudentEmail();
@@ -549,27 +558,24 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         intent.putExtra("chatId", chatId);
         context.startActivity(intent);
     }
-    
+
     private void viewResume(Context context, String resumeUrl) {
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse(resumeUrl));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            
-            // Verify that there's an app to handle this intent
-            if (intent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(intent);
-            } else {
-                Toast.makeText(context, "No app available to view resume", Toast.LENGTH_SHORT).show();
-            }
-        } catch (android.content.ActivityNotFoundException e) {
-            // Handle case where no app can handle the intent
-            Toast.makeText(context, "No app available to view resume", Toast.LENGTH_SHORT).show();
+            String encodedUrl = java.net.URLEncoder.encode(resumeUrl, "UTF-8");
+            String viewerUrl =
+                    "https://docs.google.com/gview?embedded=true&url=" + encodedUrl;
+
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(viewerUrl));
+            browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            context.startActivity(browserIntent);
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(context, "Error opening resume", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Could not open resume", Toast.LENGTH_SHORT).show();
         }
     }
+
+
 
     static class ApplicantViewHolder extends RecyclerView.ViewHolder {
         TextView tvStudentName;
@@ -579,6 +585,7 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
         TextView tvInitialMessage;
         Button btnStartChat;
         Button btnViewResume;
+        View viewNewApplicantIndicator;
 
         public ApplicantViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -589,6 +596,7 @@ public class ApplicantAdapter extends RecyclerView.Adapter<ApplicantAdapter.Appl
             tvInitialMessage = itemView.findViewById(R.id.tv_initial_message);
             btnStartChat = itemView.findViewById(R.id.btn_start_chat);
             btnViewResume = itemView.findViewById(R.id.btn_view_resume);
+            viewNewApplicantIndicator = itemView.findViewById(R.id.view_new_applicant_indicator);
         }
     }
 }

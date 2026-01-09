@@ -126,6 +126,9 @@ public class ViewApplicantsActivity extends AppCompatActivity {
                             applicantList.add(application);
                         }
 
+                        // Check which applicants are new (not viewed yet)
+                        checkNewApplicants(applicantList);
+                        
                         // Fetch user personal information for all applicants
                         fetchUserPersonalInfo(applicantList);
 
@@ -291,6 +294,81 @@ public class ViewApplicantsActivity extends AppCompatActivity {
         // Refresh chat statuses when returning to this activity (e.g., after creating a chat)
         if (adapter != null) {
             adapter.refreshChatStatuses();
+        }
+        // Refresh applicants list to update new applicant indicators
+        if (jobId != null) {
+            fetchApplicants();
+        }
+    }
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Mark all currently visible applicants as viewed when leaving the screen
+        markApplicantsAsViewed();
+    }
+    
+    private void checkNewApplicants(List<ApplicationModel> applicants) {
+        SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
+        String viewedApplicantsKey = "viewed_applicants_" + jobId;
+        String viewedApplicantsJson = prefs.getString(viewedApplicantsKey, "{}");
+        
+        try {
+            org.json.JSONObject viewedMap = new org.json.JSONObject(viewedApplicantsJson);
+            
+            for (ApplicationModel applicant : applicants) {
+                String applicationId = applicant.getApplicationId();
+                String timestamp = applicant.getTimestamp();
+                
+                // Check if this applicant has been viewed
+                if (viewedMap.has(applicationId)) {
+                    String lastViewedTime = viewedMap.getString(applicationId);
+                    // If applicant timestamp is newer than last viewed time, it's new
+                    if (timestamp != null && timestamp.compareTo(lastViewedTime) > 0) {
+                        applicant.setNewApplicant(true);
+                    } else {
+                        applicant.setNewApplicant(false);
+                    }
+                } else {
+                    // Never viewed - mark as new
+                    applicant.setNewApplicant(true);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // On error, mark all as new
+            for (ApplicationModel applicant : applicants) {
+                applicant.setNewApplicant(true);
+            }
+        }
+    }
+    
+    private void markApplicantsAsViewed() {
+        SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
+        String viewedApplicantsKey = "viewed_applicants_" + jobId;
+        
+        try {
+            org.json.JSONObject viewedMap = new org.json.JSONObject();
+            String existingJson = prefs.getString(viewedApplicantsKey, "{}");
+            if (!existingJson.isEmpty()) {
+                viewedMap = new org.json.JSONObject(existingJson);
+            }
+            
+            // Mark all current applicants as viewed with their current timestamp
+            for (ApplicationModel applicant : applicantList) {
+                String applicationId = applicant.getApplicationId();
+                String timestamp = applicant.getTimestamp();
+                if (applicationId != null && timestamp != null) {
+                    viewedMap.put(applicationId, timestamp);
+                }
+            }
+            
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString(viewedApplicantsKey, viewedMap.toString());
+            editor.apply();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

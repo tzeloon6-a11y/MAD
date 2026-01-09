@@ -325,8 +325,8 @@ public class ChatFragment extends Fragment {
                                 }
                             }
                             
-                            // Update adapter with complete data
-                            adapter.updateData(chatList);
+                            // Fetch unread counts for each chat
+                            fetchUnreadCountsForChats(chatList);
                             
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -355,6 +355,75 @@ public class ChatFragment extends Fragment {
             e.printStackTrace();
             // On error, still show chats without user data
             adapter.updateData(chatList);
+        }
+    }
+    
+    private void fetchUnreadCountsForChats(ArrayList<ChatModel> chatList) {
+        if (chatList.isEmpty()) {
+            adapter.updateData(chatList);
+            return;
+        }
+        
+        final int[] completedCount = {0};
+        final int totalChats = chatList.size();
+        
+        // Count unread messages for each chat using database is_read field
+        for (ChatModel chat : chatList) {
+            String chatId = chat.getChatId();
+            
+            // Count unread messages for this chat where receiver is current user
+            try {
+                String encodedChatId = URLEncoder.encode(chatId, "UTF-8");
+                String encodedReceiverId = URLEncoder.encode(currentUserId, "UTF-8");
+                
+                String url = SupabaseConfig.SUPABASE_URL
+                        + "/rest/v1/messages?select=message_id&chat_id=eq." + encodedChatId
+                        + "&receiver_id=eq." + encodedReceiverId
+                        + "&is_read=eq.false";
+                
+                JsonArrayRequest request = new JsonArrayRequest(
+                        Request.Method.GET,
+                        url,
+                        null,
+                        response -> {
+                            chat.setUnreadCount(response.length());
+                            completedCount[0]++;
+                            
+                            // When all chats are processed, update adapter
+                            if (completedCount[0] == totalChats) {
+                                adapter.updateData(chatList);
+                            }
+                        },
+                        error -> {
+                            chat.setUnreadCount(0);
+                            completedCount[0]++;
+                            
+                            if (completedCount[0] == totalChats) {
+                                adapter.updateData(chatList);
+                            }
+                        }
+                ) {
+                    @Override
+                    public Map<String, String> getHeaders() {
+                        Map<String, String> headers = new HashMap<>();
+                        headers.put("apikey", SupabaseConfig.SUPABASE_KEY);
+                        headers.put("Authorization", "Bearer " + SupabaseConfig.SUPABASE_KEY);
+                        headers.put("Content-Type", "application/json");
+                        return headers;
+                    }
+                };
+                
+                ApiClient.getRequestQueue(requireContext()).add(request);
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                chat.setUnreadCount(0);
+                completedCount[0]++;
+                
+                if (completedCount[0] == totalChats) {
+                    adapter.updateData(chatList);
+                }
+            }
         }
     }
     

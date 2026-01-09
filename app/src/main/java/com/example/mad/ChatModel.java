@@ -12,6 +12,7 @@ public class ChatModel {
     private String studentName;
     private String studentBio;
     private String recruiterName;
+    private int unreadCount = 0;
 
     public ChatModel(String chatId, String jobId, String studentId, String recruiterId,
                      String jobTitle, String lastMessage, String timestamp) {
@@ -74,6 +75,14 @@ public class ChatModel {
     
     public void setRecruiterName(String recruiterName) {
         this.recruiterName = recruiterName;
+    }
+    
+    public int getUnreadCount() {
+        return unreadCount;
+    }
+    
+    public void setUnreadCount(int unreadCount) {
+        this.unreadCount = unreadCount;
     }
 }
 

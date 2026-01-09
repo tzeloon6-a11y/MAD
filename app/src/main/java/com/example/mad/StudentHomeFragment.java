@@ -4,11 +4,15 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -68,6 +72,12 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
     private boolean isShowingAppliedTab = false;
     private List<Job> allJobsList = new ArrayList<>(); // All jobs from database
     private List<Job> appliedJobsList = new ArrayList<>(); // Only applied jobs
+    private List<Job> filteredAllJobsList = new ArrayList<>(); // Filtered all jobs
+    private List<Job> filteredAppliedJobsList = new ArrayList<>(); // Filtered applied jobs
+    
+    // Search
+    private EditText etSearch;
+    private String currentSearchQuery = "";
 
     @Nullable
     @Override
@@ -82,12 +92,19 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         btnAllJobs = view.findViewById(R.id.btn_all_jobs);
         btnAppliedJobs = view.findViewById(R.id.btn_applied_jobs);
         
+        // Initialize search
+        etSearch = view.findViewById(R.id.et_search);
+        ImageView ivSearchIcon = view.findViewById(R.id.iv_search_icon);
+        
         // Get current user ID
         SharedPreferences prefs = requireActivity().getSharedPreferences(LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
         currentUserId = prefs.getString(LoginActivity.KEY_USER_ID, null);
         
         // Setup tab button listeners
         setupTabButtons();
+        
+        // Setup search functionality
+        setupSearch(ivSearchIcon);
         
         setupCardStackView();
         loadJobsFromSupabase();
@@ -131,21 +148,79 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
         }
     }
     
-    private void showAllJobsTab() {
-        // Filter out applied jobs from allJobsList
-        List<Job> availableJobs = new ArrayList<>();
-        for (Job job : allJobsList) {
-            // Only include jobs that are NOT in the appliedJobs map, or if they are, they must be false
-            String jobId = job.getJobId();
-            if (!appliedJobs.containsKey(jobId)) {
-                // Not applied - include it
-                availableJobs.add(job);
-            } else if (appliedJobs.containsKey(jobId) && !appliedJobs.get(jobId)) {
-                // Explicitly marked as not applied - include it
-                availableJobs.add(job);
+    private void setupSearch(ImageView ivSearchIcon) {
+        etSearch.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                // Hide keyboard
+                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) 
+                        requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                return true;
             }
-            // If appliedJobs.get(jobId) is true, we skip it (don't add to availableJobs)
+            return false;
+        });
+        
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentSearchQuery = s.toString().trim().toLowerCase();
+                applySearchFilter();
+            }
+            
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+        
+        ivSearchIcon.setOnClickListener(v -> {
+            // Clear search on icon click
+            etSearch.setText("");
+            currentSearchQuery = "";
+            applySearchFilter();
+        });
+    }
+    
+    private void applySearchFilter() {
+        // Filter all jobs list
+        filteredAllJobsList.clear();
+        for (Job job : allJobsList) {
+            String jobId = job.getJobId();
+            // Skip applied jobs
+            if (appliedJobs.containsKey(jobId) && appliedJobs.get(jobId)) {
+                continue;
+            }
+            
+            // Apply search filter
+            if (currentSearchQuery.isEmpty() || 
+                job.getTitle().toLowerCase().contains(currentSearchQuery) ||
+                job.getDescription().toLowerCase().contains(currentSearchQuery)) {
+                filteredAllJobsList.add(job);
+            }
         }
+        
+        // Filter applied jobs list
+        filteredAppliedJobsList.clear();
+        for (Job job : appliedJobsList) {
+            if (currentSearchQuery.isEmpty() ||
+                job.getTitle().toLowerCase().contains(currentSearchQuery) ||
+                job.getDescription().toLowerCase().contains(currentSearchQuery)) {
+                filteredAppliedJobsList.add(job);
+            }
+        }
+        
+        // Refresh the current tab
+        if (isShowingAppliedTab) {
+            showAppliedJobsTab();
+        } else {
+            showAllJobsTab();
+        }
+    }
+    
+    private void showAllJobsTab() {
+        // Use filtered list
+        List<Job> availableJobs = new ArrayList<>(filteredAllJobsList);
         
         // Update adapter with filtered jobs
         adapter = new CardStackAdapter(availableJobs);
@@ -163,13 +238,16 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
     }
     
     private void showAppliedJobsTab() {
+        // Use filtered list
+        List<Job> availableJobs = new ArrayList<>(filteredAppliedJobsList);
+        
         // Show only applied jobs
-        adapter = new CardStackAdapter(new ArrayList<>(appliedJobsList));
+        adapter = new CardStackAdapter(availableJobs);
         cardStackView.setAdapter(adapter);
         setupButtonListeners();
         
         // Show/hide empty state
-        if (appliedJobsList.isEmpty()) {
+        if (availableJobs.isEmpty()) {
             cardStackView.setVisibility(View.GONE);
             emptyStateLayout.setVisibility(View.VISIBLE);
         } else {
@@ -251,6 +329,9 @@ public class StudentHomeFragment extends Fragment implements CardStackListener {
                             allJobsList.add(jobWithDate.job);
                         }
 
+                        // Apply search filter if there's a query
+                        applySearchFilter();
+                        
                         // Load applied jobs first, then show the appropriate tab
                         loadAppliedJobsAndShowTab();
 

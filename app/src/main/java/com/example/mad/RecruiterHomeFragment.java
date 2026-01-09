@@ -4,9 +4,14 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,7 +50,10 @@ public class RecruiterHomeFragment extends Fragment {
     private RecyclerView recyclerView;
     private RecruiterJobAdapter adapter;
     private List<JobModel> jobList;
+    private List<JobModel> filteredJobList; // Filtered jobs based on search
     private TextView tvEmptyState; // Optional: To show "No jobs found" text
+    private EditText etSearch;
+    private String currentSearchQuery = "";
 
     @Nullable
     @Override
@@ -59,10 +67,16 @@ public class RecruiterHomeFragment extends Fragment {
 
         // 3. Initialize Adapter
         jobList = new ArrayList<>();
-        adapter = new RecruiterJobAdapter(jobList);
+        filteredJobList = new ArrayList<>();
+        adapter = new RecruiterJobAdapter(filteredJobList);
         recyclerView.setAdapter(adapter);
 
-        // 4. Fetch Data
+        // 4. Setup Search
+        etSearch = view.findViewById(R.id.et_search);
+        ImageView ivSearchIcon = view.findViewById(R.id.iv_search_icon);
+        setupSearch(ivSearchIcon);
+
+        // 5. Fetch Data
         fetchJobsFromSupabase();
 
         return view;
@@ -137,10 +151,14 @@ public class RecruiterHomeFragment extends Fragment {
                             });
                             
                             // Extract sorted jobs
+                            jobList.clear();
                             for (JobWithDate jobWithDate : jobsWithDates) {
                                 jobList.add(jobWithDate.job);
                             }
 
+                            // Apply search filter
+                            applySearchFilter();
+                            
                             // E. Refresh the List
                             adapter.notifyDataSetChanged();
 
@@ -172,5 +190,60 @@ public class RecruiterHomeFragment extends Fragment {
 
         // F. Add to Queue
         ApiClient.getRequestQueue(getContext()).add(request);
+    }
+    
+    private void setupSearch(ImageView ivSearchIcon) {
+        etSearch.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                // Hide keyboard
+                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) 
+                        requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                return true;
+            }
+            return false;
+        });
+        
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                currentSearchQuery = s.toString().trim().toLowerCase();
+                applySearchFilter();
+            }
+            
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+        
+        ivSearchIcon.setOnClickListener(v -> {
+            // Clear search on icon click
+            etSearch.setText("");
+            currentSearchQuery = "";
+            applySearchFilter();
+        });
+    }
+    
+    private void applySearchFilter() {
+        filteredJobList.clear();
+        
+        if (currentSearchQuery.isEmpty()) {
+            // No search query - show all jobs
+            filteredJobList.addAll(jobList);
+        } else {
+            // Filter jobs by title or description
+            for (JobModel job : jobList) {
+                String title = job.getTitle().toLowerCase();
+                String description = job.getDescription().toLowerCase();
+                
+                if (title.contains(currentSearchQuery) || description.contains(currentSearchQuery)) {
+                    filteredJobList.add(job);
+                }
+            }
+        }
+        
+        adapter.notifyDataSetChanged();
     }
 }

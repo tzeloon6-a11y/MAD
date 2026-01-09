@@ -14,11 +14,20 @@
         android:background="@android:color/black"
         android:layout_alignParentTop="true" />
 
+    <!-- Notification Banner -->
+    <include
+        android:id="@+id/notification_banner"
+        layout="@layout/layout_notification_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/top_padding_bar"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/top_padding_bar"
+        android:layout_below="@id/notification_banner"
         android:layout_above="@+id/bottom_navigation"/>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
