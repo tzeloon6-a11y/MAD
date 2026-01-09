@@ -23,6 +23,9 @@ import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,12 +42,11 @@ public class PostFragment extends Fragment {
     private Uri selectedMediaUri;
     private String selectedMediaType; // "image" or "video"
 
-    // Use static factory method instead of public constructor
     public static PostFragment newInstance() {
         return new PostFragment();
     }
 
-    private PostFragment() {}
+    public PostFragment() {}
 
     private final ActivityResultLauncher<Intent> mediaPickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -90,7 +92,6 @@ public class PostFragment extends Fragment {
     }
 
     private void submitPost() {
-
         SharedPreferences prefs = requireActivity()
                 .getSharedPreferences(LoginActivity.PREFS_NAME, Context.MODE_PRIVATE);
 
@@ -110,7 +111,6 @@ public class PostFragment extends Fragment {
             return;
         }
 
-        // ✅ Decide table based on role & radio
         String table = "experience_posts";
         if ("recruiter".equalsIgnoreCase(role)) {
             int checkedId = rgPostType.getCheckedRadioButtonId();
@@ -119,14 +119,42 @@ public class PostFragment extends Fragment {
             }
         }
 
-        String mediaUrl = (selectedMediaUri != null) ? selectedMediaUri.toString() : null;
+        // Copy the file to internal storage before sending to Supabase
+        String finalMediaUrl = null;
+        if (selectedMediaUri != null) {
+            finalMediaUrl = copyFileToInternalStorage(selectedMediaUri);
+        }
 
-        sendToSupabase(table, userId, title, content, mediaUrl, selectedMediaType);
+        sendToSupabase(table, userId, title, content, finalMediaUrl);
     }
 
-    // ✅ SUPABASE INSERT
+    private String copyFileToInternalStorage(Uri uri) {
+        try {
+            String fileName = "media_" + System.currentTimeMillis();
+            File file = new File(requireContext().getFilesDir(), fileName);
+            
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            FileOutputStream outputStream = new FileOutputStream(file);
+            
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+            
+            inputStream.close();
+            outputStream.flush();
+            outputStream.close();
+            
+            return Uri.fromFile(file).toString(); // Returns file:// path
+        } catch (Exception e) {
+            Log.e("PostFragment", "Failed to copy file", e);
+            return null;
+        }
+    }
+
     private void sendToSupabase(String table, String userId, String title,
-                                String content, String mediaUrl, String mediaType) {
+                                String content, String mediaUrl) {
 
         String url = SupabaseConfig.SUPABASE_URL + "/rest/v1/" + table;
 
@@ -139,19 +167,10 @@ public class PostFragment extends Fragment {
                     clearInputs();
                 },
                 error -> {
-                    String responseBody = null;
-                    if (error.networkResponse != null && error.networkResponse.data != null) {
-                        try {
-                            responseBody = new String(error.networkResponse.data, StandardCharsets.UTF_8);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    Log.e("PostFragment", "Error: " + error.toString() + " | Body: " + responseBody);
-                    Toast.makeText(getActivity(), "Post failed! Check Logcat for details.", Toast.LENGTH_LONG).show();
+                    Log.e("PostFragment", "Error: " + error.toString());
+                    Toast.makeText(getActivity(), "Post failed!", Toast.LENGTH_LONG).show();
                 }
         ) {
-
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
@@ -168,16 +187,13 @@ public class PostFragment extends Fragment {
                     JSONObject json = new JSONObject();
                     json.put("user_id", userId);
                     json.put("title", title);
-                    // ✅ FIXED: Changed "content" to "description" to match database schema
                     json.put("description", content);
-
+                    
+                    // ✅ FIXED: Only include media_url, removed media_type for all tables
                     if (mediaUrl != null) {
                         json.put("media_url", mediaUrl);
                     }
-                    if (mediaType != null) {
-                        json.put("media_type", mediaType);
-                    }
-
+                    
                     return json.toString().getBytes(StandardCharsets.UTF_8);
 
                 } catch (Exception e) {
@@ -193,13 +209,11 @@ public class PostFragment extends Fragment {
     private void pickMedia() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
-        intent.putExtra(Intent.EXTRA_MIME_TYPES,
-                new String[]{"image/*", "video/*"});
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
         mediaPickerLauncher.launch(intent);
     }
 
     private void handleMediaSelection(Uri uri) {
-
         selectedMediaUri = uri;
         String type = requireContext().getContentResolver().getType(uri);
 
@@ -210,17 +224,11 @@ public class PostFragment extends Fragment {
             selectedMediaType = "image";
             ivPreview.setVisibility(View.VISIBLE);
             ivPreview.setImageURI(uri);
-
         } else if (type != null && type.startsWith("video")) {
             selectedMediaType = "video";
             vvPreview.setVisibility(View.VISIBLE);
             vvPreview.setVideoURI(uri);
             vvPreview.start();
-
-        } else {
-            Toast.makeText(getContext(), "Unsupported file type", Toast.LENGTH_SHORT).show();
-            selectedMediaUri = null;
-            selectedMediaType = null;
         }
     }
 
