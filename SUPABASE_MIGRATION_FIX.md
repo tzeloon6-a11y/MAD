@@ -63,3 +63,4 @@ WHERE m.receiver_id IS NOT NULL
 
 **Remove the foreign key constraint** - it's not necessary for this use case. Your application code already ensures valid receiver_ids when sending messages.
 
+
