@@ -8,6 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import java.util.List;
+
+
 public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.ViewHolder> {
     private final List<Job> items;
     private OnButtonClickListener buttonClickListener;
@@ -68,15 +70,13 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.View
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView jobTitle, companyName, wage, location, jobDescription;
+        TextView jobTitle, companyName, jobDescription;
         MaterialButton notNowButton, interestedButton, saveButton;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             jobTitle = itemView.findViewById(R.id.job_title);
             companyName = itemView.findViewById(R.id.company_name);
-            wage = itemView.findViewById(R.id.wage);
-            location = itemView.findViewById(R.id.location);
             jobDescription = itemView.findViewById(R.id.job_description);
             notNowButton = itemView.findViewById(R.id.not_now_button);
             interestedButton = itemView.findViewById(R.id.interested_button);
@@ -85,8 +85,6 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.View
         void setData(Job data) {
             jobTitle.setText(data.getTitle());
             companyName.setText(data.getCompanyName());
-            wage.setText(data.getWage());
-            location.setText(data.getLocation());
             jobDescription.setText(data.getDescription());
         }
     }
